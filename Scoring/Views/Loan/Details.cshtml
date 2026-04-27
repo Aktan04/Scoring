@@ -1,0 +1,53 @@
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model CreditScoringSystem.Models.ScoringResult
+
+<div class="container mt-5">
+    <div class="card shadow-lg">
+        <div class="card-header @(Model.Decision == "Approved" ? "bg-success" : (Model.Decision == "Rejected" ? "bg-danger" : "bg-warning")) text-white">
+            <h3>Решение по заявке: @(Model.Decision == "Approved" ? "ОДОБРЕНО" : (Model.Decision == "Rejected" ? "ОТКАЗ" : "НУЖНА ПРОВЕРКА"))</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Информация о клиенте</h5>
+                    <p><strong>ФИО:</strong> @Model.Application.LastName @Model.Application.FirstName</p>
+                    <p><strong>ИНН:</strong> @Model.Application.Inn</p>
+                    <p><strong>Сумма:</strong> @Model.Application.Amount.ToString("N0") сом</p>
+                </div>
+                <div class="col-md-6 text-center border-start">
+                    <h5>Итоговый балл</h5>
+                    <h1 class="display-1 fw-bold @(Model.TotalScore >= 70 ? "text-success" : "text-primary")">@Model.TotalScore</h1>
+                    <p class="text-muted">из 100 возможных</p>
+                </div>
+            </div>
+
+            <hr />
+
+            <h5>Детализация скоринга (Лог системы):</h5>
+            <div class="bg-light p-3 rounded border">
+                <ul class="mb-0">
+                    @foreach (var detail in Model.RawResponseJson.Split(';'))
+                    {
+                        if (!string.IsNullOrWhiteSpace(detail))
+                        {
+                            <li class="mb-1">@detail.Trim()</li>
+                        }
+                    }
+                </ul>
+            </div>
+
+            <div class="mt-4">
+                <a asp-action="MyApplications" class="btn btn-secondary">Назад к списку</a>
+                @if (Model.Decision == "Approved")
+                {
+                    @if (Model.Decision == "Approved")
+                    {
+                        <a asp-action="DownloadContract" asp-route-id="@Model.ApplicationId" class="btn btn-success">
+                            <i class="bi bi-file-earmark-pdf"></i> Скачать кредитный договор
+                        </a>
+                    }                
+                }
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,95 @@
+@model LoanApplication
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white p-4">
+                    <h3 class="mb-0"><i class="bi bi-file-earmark-text"></i> Новая кредитная заявка</h3>
+                    <p class="mb-0 opacity-75">Пожалуйста, заполните все поля анкеты максимально точно</p>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <h5 class="text-primary mb-3"><i class="bi bi-person"></i> Персональные данные</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="FirstName" class="form-label fw-bold">Имя</label>
+                                <input asp-for="FirstName" class="form-control" />
+                                <span asp-validation-for="FirstName" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="LastName" class="form-label fw-bold">Фамилия</label>
+                                <input asp-for="LastName" class="form-control" />
+                                <span asp-validation-for="LastName" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Inn" class="form-label fw-bold">ИНН</label>
+                                <input asp-for="Inn" class="form-control" placeholder="14 цифр" />
+                                <span asp-validation-for="Inn" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="BirthDate" class="form-label fw-bold">Дата рождения</label>
+                                <input asp-for="BirthDate" type="date" class="form-control" />
+                                <span asp-validation-for="BirthDate" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <h5 class="text-primary mt-4 mb-3"><i class="bi bi-cash-stack"></i> Параметры кредита и доход</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="LoanType" class="form-label fw-bold">Тип кредитного продукта</label>
+                                <select asp-for="LoanType" class="form-select">
+                                    <option value="Потребительский">Потребительский кредит</option>
+                                    <option value="Микрокредит">Срочный микрокредит</option>
+                                    <option value="Автокредит">Автокредитование</option>
+                                    <option value="Ипотека">Ипотека</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Amount" class="form-label fw-bold">Сумма кредита (сом)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">KGS</span>
+                                    <input asp-for="Amount" type="number" class="form-control" />
+                                </div>
+                                <span asp-validation-for="Amount" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="IncomeAmount" class="form-label fw-bold">Ваш доход в месяц</label>
+                                <input asp-for="IncomeAmount" type="number" class="form-control" />
+                                <span asp-validation-for="IncomeAmount" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="EmploymentYears" class="form-label fw-bold">Стаж работы (полных лет)</label>
+                                <input asp-for="EmploymentYears" type="number" class="form-control" />
+                                <span asp-validation-for="EmploymentYears" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-cpu"></i> Отправить на автоматический скоринг
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="text-center mt-3">
+                <a asp-action="MyApplications" class="text-decoration-none text-muted">
+                    <i class="bi bi-arrow-left"></i> Вернуться к моим заявкам
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

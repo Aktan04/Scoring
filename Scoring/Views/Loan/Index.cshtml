@@ -1,0 +1,77 @@
+@model IEnumerable<LoanApplication>
+
+<div class="container-fluid">
+    <h2 class="mb-4">Панель управления кредитным отделом</h2>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white shadow">
+                <div class="card-body">
+                    <h6>Всего заявок</h6>
+                    <h2>@ViewBag.TotalCount</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white shadow">
+                <div class="card-body">
+                    <h6>Одобрено (Авто)</h6>
+                    <h2>@ViewBag.ApprovedCount</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white shadow">
+                <div class="card-body">
+                    <h6>Отказы</h6>
+                    <h2>@ViewBag.RejectedCount</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark shadow">
+                <div class="card-body">
+                    <h6>На проверке</h6>
+                    <h2>@ViewBag.PendingCount</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-header">
+            <h5 class="m-0">Последние заявки</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Дата</th>
+                        <th>ФИО</th>
+                        <th>Сумма</th>
+                        <th>Статус</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.CreatedAt.ToShortDateString()</td>
+                            <td>@item.LastName @item.FirstName</td>
+                            <td>@item.Amount.ToString("N0") сом</td>
+                            <td>
+                                <span class="badge @(item.StatusId == 3 ? "bg-success" : (item.StatusId == 4 ? "bg-danger" : "bg-warning"))">
+                                    @item.Status?.Name
+                                </span>
+                            </td>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info">Просмотр</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

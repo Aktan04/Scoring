@@ -1,0 +1,30 @@
+@model IEnumerable<CreditScoringSystem.Models.ScoringRule>
+
+<h2>Настройка весовых коэффициентов скоринга</h2>
+<p class="text-muted">Изменение этих параметров мгновенно влияет на расчет новых заявок.</p>
+
+<table class="table table-bordered shadow-sm">
+    <thead class="table-dark">
+    <tr>
+        <th>Параметр</th>
+        <th>Мин. значение</th>
+        <th>Макс. значение</th>
+        <th>Баллы (Weight)</th>
+        <th>Действие</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var rule in Model)
+    {
+        <tr>
+            <td>@rule.ParameterName</td>
+            <td>@(rule.MinValue?.ToString() ?? "-")</td>
+            <td>@(rule.MaxValue?.ToString() ?? "-")</td>
+            <td class="fw-bold text-primary">@rule.WeightPoints</td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@rule.Id" class="btn btn-sm btn-warning">Изменить</a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

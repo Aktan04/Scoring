@@ -1,0 +1,76 @@
+@{
+    ViewData["Title"] = "Аналитический дашборд";
+}
+
+<div class="container-fluid mt-4">
+    <h2 class="mb-4 text-center"><i class="bi bi-graph-up"></i> Аналитика кредитного портфеля</h2>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="card-title mb-0">Статистика по решениям (Scoring Results)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" width="400" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="card-title mb-0">Распределение по типам кредитов</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="typeChart" width="400" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // 1. Диаграмма статусов (Pie Chart)
+    const ctxStatus = document.getElementById('statusChart').getContext('2d');
+    new Chart(ctxStatus, {
+        type: 'pie',
+        data: {
+            labels: @Html.Raw(Json.Serialize(ViewBag.StatusLabels)),
+            datasets: [{
+                data: @Html.Raw(Json.Serialize(ViewBag.StatusData)),
+                backgroundColor: ['#28a745', '#dc3545', '#ffc107', '#17a2b8', '#6c757d'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
+    // 2. Диаграмма типов кредитов (Bar Chart)
+    const ctxType = document.getElementById('typeChart').getContext('2d');
+    new Chart(ctxType, {
+        type: 'bar',
+        data: {
+            labels: @Html.Raw(Json.Serialize(ViewBag.TypeLabels)),
+            datasets: [{
+                label: 'Количество заявок',
+                data: @Html.Raw(Json.Serialize(ViewBag.TypeData)),
+                backgroundColor: '#007bff',
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+</script>
