@@ -1,52 +1,61 @@
 @using Microsoft.AspNetCore.Mvc.TagHelpers
 @model CreditScoringSystem.Models.ScoringResult
 
-<div class="container mt-5">
-    <div class="card shadow-lg">
-        <div class="card-header @(Model.Decision == "Approved" ? "bg-success" : (Model.Decision == "Rejected" ? "bg-danger" : "bg-warning")) text-white">
-            <h3>Решение по заявке: @(Model.Decision == "Approved" ? "ОДОБРЕНО" : (Model.Decision == "Rejected" ? "ОТКАЗ" : "НУЖНА ПРОВЕРКА"))</h3>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>Информация о клиенте</h5>
-                    <p><strong>ФИО:</strong> @Model.Application.LastName @Model.Application.FirstName</p>
-                    <p><strong>ИНН:</strong> @Model.Application.Inn</p>
-                    <p><strong>Сумма:</strong> @Model.Application.Amount.ToString("N0") сом</p>
-                </div>
-                <div class="col-md-6 text-center border-start">
-                    <h5>Итоговый балл</h5>
-                    <h1 class="display-1 fw-bold @(Model.TotalScore >= 70 ? "text-success" : "text-primary")">@Model.TotalScore</h1>
-                    <p class="text-muted">из 100 возможных</p>
-                </div>
-            </div>
+@{
+    ViewData["Title"] = "Результат скоринга";
+    var app = Model.Application;
+    var isApproved = Model.Decision == "Approved";
+}
 
-            <hr />
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow border-0 overflow-hidden">
+                <div class="bg-@(isApproved ? "success" : (Model.Decision == "ManualReview" ? "warning" : "danger")) p-4 text-center text-white">
+                    <h1 class="display-1 fw-bold mb-0">@Model.TotalScore</h1>
+                    <p class="mb-0 fs-5">Итоговый балл</p>
+                </div>
+                <div class="card-body p-5">
+                    <h4 class="fw-bold mb-4 text-center">Решение системы:
+                        <span class="text-@(isApproved ? "success" : (Model.Decision == "ManualReview" ? "warning text-dark" : "danger"))">
+                            @app.Status?.Name
+                        </span>
+                    </h4>
 
-            <h5>Детализация скоринга (Лог системы):</h5>
-            <div class="bg-light p-3 rounded border">
-                <ul class="mb-0">
-                    @foreach (var detail in Model.RawResponseJson.Split(';'))
-                    {
-                        if (!string.IsNullOrWhiteSpace(detail))
+                    <div class="bg-light rounded p-4 mb-4 border">
+                        <h6 class="fw-bold text-muted text-uppercase mb-3">Информация по заявке</h6>
+                        <div class="row">
+                            <div class="col-sm-6 mb-2"><strong>Клиент:</strong> @app.LastName @app.FirstName</div>
+                            <div class="col-sm-6 mb-2"><strong>Продукт:</strong> @app.LoanProduct?.Name</div>
+                            <div class="col-sm-6 mb-2"><strong>Сумма:</strong> @app.Amount.ToString("N0") сом</div>
+                            <div class="col-sm-6 mb-2"><strong>Срок:</strong> @app.TermMonths мес.</div>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-muted text-uppercase mb-3">Детализация расчета</h6>
+                    <ul class="list-group list-group-flush mb-4">
+                        @foreach (var log in Model.RawResponseJson.Split(';'))
                         {
-                            <li class="mb-1">@detail.Trim()</li>
+                            if (!string.IsNullOrWhiteSpace(log))
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                    <span><i class="bi bi-check2-circle text-primary me-2"></i> @log.Split(':')[0]</span>
+                                    <span class="fw-bold">@log.Split(':').LastOrDefault()</span>
+                                </li>
+                            }
                         }
-                    }
-                </ul>
-            </div>
+                    </ul>
 
-            <div class="mt-4">
-                <a asp-action="MyApplications" class="btn btn-secondary">Назад к списку</a>
-                @if (Model.Decision == "Approved")
-                {
-                    @if (Model.Decision == "Approved")
-                    {
-                        <a asp-action="DownloadContract" asp-route-id="@Model.ApplicationId" class="btn btn-success">
-                            <i class="bi bi-file-earmark-pdf"></i> Скачать кредитный договор
-                        </a>
-                    }                
-                }
+                    <div class="text-center mt-4">
+                        @if (isApproved)
+                        {
+                            <a asp-action="DownloadContract" asp-route-id="@app.Id" class="btn btn-success btn-lg px-5 shadow-sm">
+                                <i class="bi bi-download me-2"></i>Скачать договор
+                            </a>
+                        }
+                        <a asp-action="MyApplications" class="btn btn-outline-secondary btn-lg ms-2">Вернуться к списку</a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

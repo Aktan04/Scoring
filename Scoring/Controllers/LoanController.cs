@@ -162,45 +162,6 @@ public class LoanController : Controller
         return RedirectToAction("Details", new { id = app.Id });
     }
     
-    [Authorize(Roles = "officer, admin")]
-    public async Task<IActionResult> VerificationQueue()
-    {
-        var queue = await _context.LoanApplications
-            .Include(a => a.Status)
-            .Include(a => a.LoanProduct) // ИЗМЕНЕНО: Офицер должен видеть название продукта
-            .Where(a => a.StatusId == 5) 
-            .OrderBy(a => a.CreatedAt)
-            .ToListAsync();
-
-        return View(queue);
-    }
-
-    [HttpPost]
-    [Authorize(Roles = "officer, admin")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ApproveManual(Guid id, bool isApproved, string comment)
-    {
-        var app = await _context.LoanApplications.FindAsync(id);
-        if (app == null) return NotFound();
-
-        app.StatusId = isApproved ? 3 : 4; 
-    
-        var result = await _context.ScoringResults.FirstOrDefaultAsync(r => r.ApplicationId == id);
-        if (result != null)
-        {
-            var officer = await _userManager.GetUserAsync(User); // Получаем офицера
-            result.RawResponseJson += $"; РУЧНОЕ РЕШЕНИЕ ({officer.FullName}): {(isApproved ? "Одобрено" : "Отказ")}; Причина: {comment}";
-            
-            // ИЗМЕНЕНО: Привязываем офицера к заявке
-            app.OfficerId = officer.Id;
-        }
-
-        _context.Update(app);
-        await _context.SaveChangesAsync();
-
-        return RedirectToAction(nameof(VerificationQueue));
-    }
-    
     [Authorize(Roles = "admin, officer")]
     public async Task<IActionResult> Dashboard()
     {

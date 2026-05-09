@@ -1,0 +1,96 @@
+@model IEnumerable<Scoring.Models.LoanApplication>
+
+@{
+    ViewData["Title"] = "Очередь верификации";
+}
+
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark">Очередь на проверку</h2>
+            <p class="text-muted">Заявки, требующие ручного подтверждения кредитным офицером</p>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-warning text-dark fs-6 px-3 py-2 shadow-sm">
+                <i class="bi bi-clock-history me-1"></i> Ожидают: @Model.Count()
+            </span>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="card border-0 shadow-sm text-center p-5">
+            <div class="card-body">
+                <i class="bi bi-check2-circle text-success" style="font-size: 4rem;"></i>
+                <h4 class="mt-3">Очередь пуста</h4>
+                <p class="text-muted">Все заявки обработаны. Можно выпить кофе!</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive shadow-sm rounded-3">
+            <table class="table table-hover align-middle bg-white mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th class="ps-4">ID и Дата</th>
+                    <th>Клиент (ИНН)</th>
+                    <th>Продукт</th>
+                    <th>Сумма</th>
+                    <th class="text-center">Действие</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var app in Model)
+                {
+                    <tr>
+                        <td class="ps-4">
+                            <span class="fw-bold text-primary">#@app.Id.ToString().Substring(0, 8)</span>
+                            <div class="text-muted small">@app.CreatedAt.ToString("dd.MM.yyyy HH:mm")</div>
+                        </td>
+                        <td>
+                            <div class="fw-bold">@app.LastName @app.FirstName</div>
+                            <div class="text-muted small">ИНН: @app.Inn</div>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">@app.LoanProduct?.Name</span>
+                        </td>
+                        <td>
+                            <div class="fw-bold text-success">@app.Amount.ToString("N0") сом</div>
+                            <div class="text-muted small text-nowrap">на @app.TermMonths мес.</div>
+                        </td>
+                        <td class="text-center">
+                            @* Вместо вызова модального окна — переход на полную карточку *@
+                            <a asp-action="ApplicationDetails" asp-route-id="@app.Id"
+                               class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm">
+                                <i class="bi bi-file-earmark-text me-1"></i> Открыть карточку
+                            </a>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@section Styles {
+    <style>
+        .table thead th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            color: #6c757d;
+            border-top: none;
+        }
+        .table-hover tbody tr:hover {
+            background-color: #f8f9fa;
+            transition: background-color 0.2s ease;
+        }
+        .rounded-3 {
+            border-radius: 0.75rem !important;
+            overflow: hidden;
+        }
+    </style>
+}

@@ -1,0 +1,87 @@
+@model Scoring.Models.LoanApplication
+
+@{
+    ViewData["Title"] = "Детали заявки";
+    var history = ViewBag.History as IEnumerable<Scoring.Models.ApplicationHistory>;
+}
+
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="VerificationQueue">Очередь</a></li>
+            <li class="breadcrumb-item active">Заявка @Model.Id.ToString().Substring(0, 8)</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Информация о клиенте</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>ФИО:</strong> @Model.LastName @Model.FirstName</p>
+                    <p><strong>ИНН:</strong> @Model.Inn</p>
+                    <p><strong>Сумма:</strong> @Model.Amount.ToString("N0") сом</p>
+                    <p><strong>Продукт:</strong> @Model.LoanProduct?.Name</p>
+                    <hr />
+                    <p><strong>Текущий статус:</strong> 
+                        <span class="badge @(Model.StatusId == 3 ? "bg-success" : "bg-warning")">
+                            @Model.Status?.Name
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0 text-secondary"><i class="bi bi-clock-history"></i> Журнал изменений</h5>
+                </div>
+                <div class="card-body">
+                    @if (history != null && history.Any())
+                    {
+                        <div class="timeline">
+                            @foreach (var item in history)
+                            {
+                                <div class="pb-3 border-start border-primary border-2 ps-4 position-relative mb-2">
+                                    <div class="position-absolute translate-middle-x bg-primary rounded-circle" 
+                                         style="width: 12px; height: 12px; left: -1px; top: 0;"></div>
+                                    
+                                    <div class="d-flex justify-content-between">
+                                        <h6 class="mb-1 fw-bold text-primary">Изменение статуса</h6>
+                                        <small class="text-muted">@item.ChangedAt.ToString("g")</small>
+                                    </div>
+                                    
+                                    <div class="small mb-2">
+                                        <span class="badge bg-light text-dark border">@item.OldStatusId</span>
+                                        <i class="bi bi-arrow-right mx-1"></i>
+                                        <span class="badge bg-info text-white">@item.NewStatusId</span>
+                                    </div>
+                                    
+                                    <p class="mb-1 p-2 bg-light rounded italic" style="font-style: italic;">
+                                        "@item.Comment"
+                                    </p>
+                                    
+                                    <div class="text-muted small">
+                                        <i class="bi bi-person-circle"></i> Офицер: <strong>@item.ChangedBy?.FullName</strong>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">История изменений отсутствует.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .timeline { position: relative; }
+    .italic { color: #555; border-left: 3px solid #dee2e6; }
+</style>

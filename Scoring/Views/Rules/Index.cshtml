@@ -1,30 +1,89 @@
-@model IEnumerable<CreditScoringSystem.Models.ScoringRule>
+@model IEnumerable<Scoring.Models.ScoringRule>
 
-<h2>Настройка весовых коэффициентов скоринга</h2>
-<p class="text-muted">Изменение этих параметров мгновенно влияет на расчет новых заявок.</p>
+@{
+    ViewData["Title"] = "Правила скоринга";
+    string currentParam = "";
+}
 
-<table class="table table-bordered shadow-sm">
-    <thead class="table-dark">
-    <tr>
-        <th>Параметр</th>
-        <th>Мин. значение</th>
-        <th>Макс. значение</th>
-        <th>Баллы (Weight)</th>
-        <th>Действие</th>
-    </tr>
-    </thead>
-    <tbody>
-    @foreach (var rule in Model)
-    {
-        <tr>
-            <td>@rule.ParameterName</td>
-            <td>@(rule.MinValue?.ToString() ?? "-")</td>
-            <td>@(rule.MaxValue?.ToString() ?? "-")</td>
-            <td class="fw-bold text-primary">@rule.WeightPoints</td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@rule.Id" class="btn btn-sm btn-warning">Изменить</a>
-            </td>
-        </tr>
-    }
-    </tbody>
-</table>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark"><i class="bi bi-diagram-3 text-primary me-2"></i>Матрица скоринга</h2>
+            <p class="text-muted">Настройка диапазонов и весовых баллов для автоматического принятия решений</p>
+        </div>
+        <a asp-action="Create" class="btn btn-primary shadow-sm">
+            <i class="bi bi-plus-lg me-1"></i> Добавить правило
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th class="ps-4">Параметр</th>
+                    <th>Диапазон (Мин - Макс)</th>
+                    <th>Вес (Баллы)</th>
+                    <th>Статус</th>
+                    <th class="text-end pe-4">Действия</th>
+                </tr>
+                </thead>
+                <tbody>
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="5" class="text-center py-4 text-muted">Правила не настроены.</td></tr>
+                }
+                @foreach (var rule in Model)
+                {
+                    // Визуальное разделение групп параметров
+                    if (currentParam != rule.ParameterName)
+                    {
+                        <tr class="table-active">
+                            <td colspan="5" class="ps-4 fw-bold text-secondary small text-uppercase">
+                                Группа: @rule.ParameterName
+                            </td>
+                        </tr>
+                        currentParam = rule.ParameterName;
+                    }
+
+                    <tr>
+                        <td class="ps-4 fw-bold">@rule.ParameterName</td>
+                        <td>
+                                <span class="badge bg-light text-dark border px-3 py-2 fs-6">
+                                    @($"{rule.MinValue:0.##}") <span class="text-muted mx-2">—</span> @($"{rule.MaxValue:0.##}")
+                                </span>
+                        </td>
+                        <td>
+                                <span class="badge @(rule.WeightPoints > 0 ? "bg-success" : (rule.WeightPoints < 0 ? "bg-danger" : "bg-secondary")) px-3 py-2 fs-6">
+                                    @(rule.WeightPoints > 0 ? "+" : "")@rule.WeightPoints
+                                </span>
+                        </td>
+                        <td>
+                            @if (rule.IsActive)
+                            {
+                                <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i> Активно</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted"><i class="bi bi-dash-circle-fill me-1"></i> Отключено</span>
+                            }
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="d-flex justify-content-end gap-2">
+                                <a asp-action="Edit" asp-route-id="@rule.Id" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form asp-action="Delete" asp-route-id="@rule.Id" method="post" onsubmit="return confirm('Удалить это правило скоринга?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

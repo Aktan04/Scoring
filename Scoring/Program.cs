@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Scoring.Data;
 using Scoring.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,14 +18,24 @@ builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql
         options.Password.RequireDigit = false; 
     })
     .AddEntityFrameworkStores<ApplicationDbContext>();
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.AccessDeniedPath = "/Account/AccessDenied";
+});
 var app = builder.Build();
 using var scope = app.Services.CreateScope();
 var services = scope.ServiceProvider;
 try
 {
+    var context = services.GetRequiredService<ApplicationDbContext>();
+    // Опционально: автоматическое применение миграций к БД при старте
+    context.Database.Migrate();
     var userManager = services.GetRequiredService<UserManager<User>>();
     var rolesManager = services.GetRequiredService<RoleManager<IdentityRole<int>>>();
     await AdminInitializer.SeedAdminUser(rolesManager, userManager);
+    await DbInitializer.SeedDataAsync(context, userManager, rolesManager);
 }
 catch (Exception ex)
 {

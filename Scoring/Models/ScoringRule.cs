@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace CreditScoringSystem.Models
+namespace Scoring.Models
 {
     [Table("scoring_rules")]
     public class ScoringRule

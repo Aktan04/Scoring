@@ -16,6 +16,7 @@ public class ApplicationDbContext : IdentityDbContext<User, IdentityRole<int>, i
     public DbSet<ApplicationStatus> ApplicationStatuses { get; set; }
     public DbSet<LoanProduct> LoanProducts { get; set; }
     public DbSet<BlackListEntry> BlackListEntries { get; set; }
+    public DbSet<ApplicationHistory> ApplicationHistories { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

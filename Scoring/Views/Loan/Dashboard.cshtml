@@ -1,76 +1,66 @@
 @{
-    ViewData["Title"] = "Аналитический дашборд";
+    ViewData["Title"] = "Аналитика";
 }
 
-<div class="container-fluid mt-4">
-    <h2 class="mb-4 text-center"><i class="bi bi-graph-up"></i> Аналитика кредитного портфеля</h2>
+<div class="container mt-4">
+    <h2 class="fw-bold text-dark mb-4"><i class="bi bi-pie-chart text-primary me-2"></i>Аналитика скоринга</h2>
 
-    <div class="row">
-        <div class="col-md-6 mb-4">
-            <div class="card shadow">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="card-title mb-0">Статистика по решениям (Scoring Results)</h5>
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3">
+                    <h6 class="mb-0 fw-bold text-secondary">Статусы заявок (Воронка)</h6>
                 </div>
                 <div class="card-body">
-                    <canvas id="statusChart" width="400" height="250"></canvas>
+                    <canvas id="statusChart"></canvas>
                 </div>
             </div>
         </div>
-
-        <div class="col-md-6 mb-4">
-            <div class="card shadow">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="card-title mb-0">Распределение по типам кредитов</h5>
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3">
+                    <h6 class="mb-0 fw-bold text-secondary">Популярность продуктов</h6>
                 </div>
                 <div class="card-body">
-                    <canvas id="typeChart" width="400" height="250"></canvas>
+                    <canvas id="typeChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // График статусов
+        const ctxStatus = document.getElementById('statusChart').getContext('2d');
+        new Chart(ctxStatus, {
+            type: 'doughnut',
+            data: {
+                labels: @Html.Raw(Json.Serialize(ViewBag.StatusLabels)),
+                datasets: [{
+                    data: @Html.Raw(Json.Serialize(ViewBag.StatusData)),
+                    backgroundColor: ['#ffc107', '#198754', '#dc3545', '#0dcaf0', '#6c757d'],
+                    borderWidth: 0
+                }]
+            },
+            options: { cutout: '70%', plugins: { legend: { position: 'bottom' } } }
+        });
 
-<script>
-    // 1. Диаграмма статусов (Pie Chart)
-    const ctxStatus = document.getElementById('statusChart').getContext('2d');
-    new Chart(ctxStatus, {
-        type: 'pie',
-        data: {
-            labels: @Html.Raw(Json.Serialize(ViewBag.StatusLabels)),
-            datasets: [{
-                data: @Html.Raw(Json.Serialize(ViewBag.StatusData)),
-                backgroundColor: ['#28a745', '#dc3545', '#ffc107', '#17a2b8', '#6c757d'],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { position: 'bottom' }
-            }
-        }
-    });
-
-    // 2. Диаграмма типов кредитов (Bar Chart)
-    const ctxType = document.getElementById('typeChart').getContext('2d');
-    new Chart(ctxType, {
-        type: 'bar',
-        data: {
-            labels: @Html.Raw(Json.Serialize(ViewBag.TypeLabels)),
-            datasets: [{
-                label: 'Количество заявок',
-                data: @Html.Raw(Json.Serialize(ViewBag.TypeData)),
-                backgroundColor: '#007bff',
-                borderRadius: 5
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: { beginAtZero: true, ticks: { stepSize: 1 } }
-            }
-        }
-    });
-</script>
+        // График продуктов
+        const ctxType = document.getElementById('typeChart').getContext('2d');
+        new Chart(ctxType, {
+            type: 'bar',
+            data: {
+                labels: @Html.Raw(Json.Serialize(ViewBag.TypeLabels)),
+                datasets: [{
+                    label: 'Количество заявок',
+                    data: @Html.Raw(Json.Serialize(ViewBag.TypeData)),
+                    backgroundColor: '#0d6efd',
+                    borderRadius: 5
+                }]
+            },
+            options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+        });
+    </script>
+}

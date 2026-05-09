@@ -1,40 +1,105 @@
-@model LoanApplication
+@model Scoring.Models.LoanApplication
 
-<div class="container mt-5">
+@{
+    ViewData["Title"] = "Информация по заявке";
+    // Определяем цвет в зависимости от статуса (2 - На скоринге, 5 - Ручная проверка и т.д.)
+    var statusColor = Model.StatusId switch
+    {
+        3 => "success",
+        4 => "danger",
+        5 => "warning",
+        _ => "info"
+    };
+}
+
+<div class="container mt-4">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow border-warning">
-                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0"><i class="bi bi-clock-history"></i> Заявка в обработке</h4>
-                    <span class="badge bg-dark">ID: @Model.Id.ToString().Substring(0,8)</span>
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+                <div class="bg-light p-4 text-center border-bottom border-@statusColor border-4">
+                    <h5 class="text-muted text-uppercase small fw-bold mb-2">Статус заявки № @Model.Id.ToString().Substring(0, 8)</h5>
+                    <div class="d-inline-flex align-items-center bg-@statusColor text-white px-4 py-2 rounded-pill fs-5 shadow-sm">
+                        @if (Model.StatusId == 2)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        }
+                        else if (Model.StatusId == 5)
+                        {
+                            <i class="bi bi-person-workspace me-2"></i>
+                        }
+                        @Model.Status?.Name
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-secondary">
-                        <strong>Статус: @Model.Status?.Name</strong>. 
-                        Результаты автоматического скоринга еще не сформированы. Пожалуйста, подождите или свяжитесь с поддержкой.
+
+                <div class="card-body p-5">
+
+                    @if (Model.StatusId == 2)
+                    {
+                        <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-5">
+                            <i class="bi bi-info-circle-fill fs-4 text-info me-3"></i>
+                            <div>
+                                Ваша заявка в данный момент проходит автоматическую проверку. Пожалуйста, обновите страницу чуть позже.
+                            </div>
+                        </div>
+                    }
+                    else if (Model.StatusId == 5)
+                    {
+                        <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center mb-5">
+                            <i class="bi bi-clock-history fs-4 text-warning me-3"></i>
+                            <div>
+                                Заявка передана на ручное рассмотрение кредитному специалисту. Ожидайте решения.
+                            </div>
+                        </div>
+                    }
+
+                    <h5 class="fw-bold text-secondary border-bottom pb-2 mb-4"><i class="bi bi-card-list me-2"></i>Данные заявки</h5>
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-sm-6">
+                            <p class="text-muted small mb-1">Кредитный продукт</p>
+                            <p class="fw-bold fs-6">@Model.LoanProduct?.Name</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="text-muted small mb-1">Дата подачи</p>
+                            <p class="fw-bold fs-6">@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="text-muted small mb-1">Запрашиваемая сумма</p>
+                            <p class="fw-bold fs-6 text-primary">@Model.Amount.ToString("N0") сом</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="text-muted small mb-1">Срок кредитования</p>
+                            <p class="fw-bold fs-6">@Model.TermMonths мес.</p>
+                        </div>
                     </div>
 
-                    <h5 class="border-bottom pb-2">Данные анкеты</h5>
-                    <div class="row mb-3">
-                        <div class="col-6 text-muted">ФИО клиента:</div>
-                        <div class="col-6 fw-bold">@Model.LastName @Model.FirstName</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-6 text-muted">Сумма кредита:</div>
-                        <div class="col-6 fw-bold">@Model.Amount.ToString("N0") сом</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-6 text-muted">Тип кредита:</div>
-                        <div class="col-6">@Model.LoanType</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-6 text-muted">Дата подачи:</div>
-                        <div class="col-6">@Model.CreatedAt.ToString("g")</div>
+                    <h5 class="fw-bold text-secondary border-bottom pb-2 mb-4 mt-4"><i class="bi bi-person-badge me-2"></i>Анкета клиента</h5>
+
+                    <div class="row g-4 mb-2">
+                        <div class="col-sm-6">
+                            <p class="text-muted small mb-1">ФИО</p>
+                            <p class="fw-bold fs-6">@Model.LastName @Model.FirstName</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="text-muted small mb-1">ИНН</p>
+                            <p class="fw-bold fs-6">@Model.Inn</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="text-muted small mb-1">Заявленный доход</p>
+                            <p class="fw-bold fs-6">@Model.IncomeAmount.ToString("N0") сом</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="text-muted small mb-1">Стаж работы</p>
+                            <p class="fw-bold fs-6">@Model.EmploymentYears лет</p>
+                        </div>
                     </div>
 
-                    <div class="d-grid mt-4">
-                        <a asp-action="MyApplications" class="btn btn-outline-primary">Вернуться к списку</a>
+                    <div class="text-center mt-5">
+                        <a asp-action="MyApplications" class="btn btn-outline-secondary btn-lg px-5 rounded-pill shadow-sm">
+                            <i class="bi bi-arrow-left me-2"></i>Вернуться к списку
+                        </a>
                     </div>
+
                 </div>
             </div>
         </div>

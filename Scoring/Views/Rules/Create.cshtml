@@ -1,0 +1,71 @@
+@model Scoring.Models.ScoringRule
+
+@{
+    ViewData["Title"] = "Создание правила";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0 border-top border-primary border-4 rounded-3">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-plus-circle text-primary me-2"></i> Новое правило скоринга</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="mb-4">
+                            <label asp-for="ParameterName" class="form-label fw-bold">Оцениваемый параметр</label>
+                            <select asp-for="ParameterName" class="form-select form-select-lg" required>
+                                <option value="">-- Выберите параметр --</option>
+                                <option value="Age">Возраст клиента (Age)</option>
+                                <option value="Income">Ежемесячный доход (Income)</option>
+                                <option value="Experience">Стаж работы (Experience)</option>
+                                <option value="DTI">Долговая нагрузка (DTI)</option>
+                            </select>
+                            <span asp-validation-for="ParameterName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label asp-for="MinValue" class="form-label fw-bold">Минимальное значение (От)</label>
+                                <input asp-for="MinValue" type="number" step="0.01" class="form-control" required />
+                                <span asp-validation-for="MinValue" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="MaxValue" class="form-label fw-bold">Максимальное значение (До)</label>
+                                <input asp-for="MaxValue" type="number" step="0.01" class="form-control" required />
+                                <span asp-validation-for="MaxValue" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label asp-for="WeightPoints" class="form-label fw-bold">Весовой балл</label>
+                                <input asp-for="WeightPoints" type="number" class="form-control" placeholder="Например: 15 или -10" required />
+                                <div class="form-text">Может быть отрицательным (штрафные баллы).</div>
+                                <span asp-validation-for="WeightPoints" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-center mt-4">
+                                <div class="form-check form-switch fs-5">
+                                    <input asp-for="IsActive" class="form-check-input" type="checkbox" role="switch" checked id="isActiveSwitch">
+                                    <label class="form-check-label ms-2" for="isActiveSwitch">Правило активно</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-5">
+                            <a asp-action="Index" class="btn btn-light px-4 shadow-sm">Отмена</a>
+                            <button type="submit" class="btn btn-primary px-5 shadow-sm">Сохранить правило</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
