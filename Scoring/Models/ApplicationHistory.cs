@@ -6,8 +6,8 @@ public class ApplicationHistory
     public Guid ApplicationId { get; set; }
     public virtual LoanApplication Application { get; set; }
     
-    public int OldStatusId { get; set; }
-    public int NewStatusId { get; set; }
+    public ApplicationStatus OldStatus { get; set; }
+    public ApplicationStatus NewStatus { get; set; }
     
     public int ChangedById { get; set; } // Какой сотрудник изменил
     public virtual User ChangedBy { get; set; }

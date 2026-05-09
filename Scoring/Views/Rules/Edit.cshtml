@@ -1,4 +1,5 @@
 @model Scoring.Models.ScoringRule
+@using Scoring.Models
 
 @{
     ViewData["Title"] = "Редактирование правила";
@@ -7,60 +8,65 @@
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-md-8">
-            <div class="card shadow-sm border-0 border-top border-warning border-4 rounded-3">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold"><i class="bi bi-pencil-square text-warning me-2"></i> Настройка правила скоринга</h5>
+            <div class="card shadow border-0 border-top border-warning border-4 rounded-4">
+                <div class="card-header bg-white py-4 border-0">
+                    <h4 class="mb-0 fw-bold text-dark"><i class="bi bi-pencil-square text-warning me-2"></i> Настройка правила скоринга</h4>
+                    <p class="text-muted small mb-0 mt-1">Внесите изменения в диапазоны или баллы</p>
                 </div>
-                <div class="card-body p-4">
+                <div class="card-body p-4 bg-light bg-opacity-50">
                     <form asp-action="Edit" method="post">
                         <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
                         <input type="hidden" asp-for="Id" />
 
-                        <div class="mb-4">
-                            <label asp-for="ParameterName" class="form-label fw-bold">Оцениваемый параметр</label>
-                            <select asp-for="ParameterName" class="form-select form-select-lg" required>
-                                <option value="Age">Возраст клиента (Age)</option>
-                                <option value="Income">Ежемесячный доход (Income)</option>
-                                <option value="Experience">Стаж работы (Experience)</option>
-                                <option value="DTI">Долговая нагрузка (DTI)</option>
-                            </select>
-                            <span asp-validation-for="ParameterName" class="text-danger small"></span>
-                        </div>
-
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-6">
-                                <label asp-for="MinValue" class="form-label fw-bold">Минимальное значение (От)</label>
-                                <input asp-for="MinValue" type="number" step="0.01" class="form-control" required />
-                                <span asp-validation-for="MinValue" class="text-danger small"></span>
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="MaxValue" class="form-label fw-bold">Максимальное значение (До)</label>
-                                <input asp-for="MaxValue" type="number" step="0.01" class="form-control" required />
-                                <span asp-validation-for="MaxValue" class="text-danger small"></span>
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-body p-4">
+                                <label asp-for="Parameter" class="form-label fw-bold text-secondary text-uppercase small">Оцениваемый параметр</label>
+                                <select asp-for="Parameter" class="form-select form-select-lg border-warning border-opacity-50 shadow-sm" asp-items="Html.GetEnumSelectList<ScoringParameter>()" required>
+                                    <option value="">-- Выберите параметр --</option>
+                                </select>
+                                <span asp-validation-for="Parameter" class="text-danger small"></span>
                             </div>
                         </div>
 
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-6">
-                                <label asp-for="WeightPoints" class="form-label fw-bold">Весовой балл</label>
-                                <input asp-for="WeightPoints" type="number" class="form-control" required />
-                                <span asp-validation-for="WeightPoints" class="text-danger small"></span>
-                            </div>
-                            <div class="col-md-6 d-flex align-items-center mt-4">
-                                <div class="form-check form-switch fs-5">
-                                    <input asp-for="IsActive" class="form-check-input" type="checkbox" role="switch" id="isActiveSwitch">
-                                    <label class="form-check-label ms-2" for="isActiveSwitch">Правило активно</label>
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-body p-4">
+                                <h6 class="fw-bold text-secondary text-uppercase small mb-3">Значения</h6>
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <label asp-for="MinValue" class="form-label fw-bold">Минимальное значение (От)</label>
+                                        <input asp-for="MinValue" type="number" step="0.01" class="form-control form-control-lg bg-light" required />
+                                        <span asp-validation-for="MinValue" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label asp-for="MaxValue" class="form-label fw-bold">Максимальное значение (До)</label>
+                                        <input asp-for="MaxValue" type="number" step="0.01" class="form-control form-control-lg bg-light" required />
+                                        <span asp-validation-for="MaxValue" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label asp-for="WeightPoints" class="form-label fw-bold">Весовой балл</label>
+                                        <input asp-for="WeightPoints" type="number" class="form-control form-control-lg border-warning border-opacity-50" required />
+                                        <span asp-validation-for="WeightPoints" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-6 d-flex align-items-center mt-md-5">
+                                        <div class="form-check form-switch fs-5 p-3 bg-white border rounded-3 w-100 shadow-sm">
+                                            <input asp-for="IsActive" class="form-check-input ms-0 me-3" type="checkbox" role="switch" id="isActiveSwitch">
+                                            <label class="form-check-label fw-bold text-dark" for="isActiveSwitch">Правило активно</label>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="alert alert-info border-0 mt-3 small">
-                            <i class="bi bi-info-circle-fill me-2"></i> Изменение баллов или диапазонов вступит в силу немедленно и будет применяться ко всем новым заявкам, отправленным на скоринг.
+                        <div class="alert alert-warning border-0 mt-3 small shadow-sm rounded-3 d-flex align-items-center">
+                            <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-warning"></i>
+                            <div>
+                                Изменение баллов или диапазонов вступит в силу немедленно и будет применяться ко всем новым заявкам, отправленным на скоринг.
+                            </div>
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">
-                            <a asp-action="Index" class="btn btn-light px-4 shadow-sm">Отмена</a>
-                            <button type="submit" class="btn btn-warning px-5 shadow-sm fw-bold">Сохранить изменения</button>
+                            <a asp-action="Index" class="btn btn-outline-secondary btn-lg px-4 shadow-sm rounded-pill">Отмена</a>
+                            <button type="submit" class="btn btn-warning btn-lg px-5 shadow-sm rounded-pill fw-bold text-dark">Обновить данные</button>
                         </div>
                     </form>
                 </div>

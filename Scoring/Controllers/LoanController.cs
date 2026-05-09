@@ -1,10 +1,10 @@
-using CreditScoringSystem.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering; // Добавлено для SelectList
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Scoring.Models;
+using System.Text.Json;
 
 namespace Scoring.Controllers;
 
@@ -19,18 +19,19 @@ public class LoanController : Controller
         _userManager = userManager;
     }
     
+    [Authorize(Roles = "admin, officer")]
     public async Task<IActionResult> Index()
     {
         var applications = await _context.LoanApplications
-            .Include(a => a.Status)
-            .Include(a => a.LoanProduct) // ИЗМЕНЕНО: Подтягиваем продукт для отображения
+            // УБРАНО: .Include(a => a.Status) - статус теперь Enum, JOIN не нужен
+            .Include(a => a.LoanProduct)
             .OrderByDescending(a => a.CreatedAt)
             .ToListAsync();
 
         ViewBag.TotalCount = applications.Count;
-        ViewBag.ApprovedCount = applications.Count(a => a.StatusId == 3);
-        ViewBag.RejectedCount = applications.Count(a => a.StatusId == 4);
-        ViewBag.PendingCount = applications.Count(a => a.StatusId == 5); 
+        ViewBag.ApprovedCount = applications.Count(a => a.Status == ApplicationStatus.Approved);
+        ViewBag.RejectedCount = applications.Count(a => a.Status == ApplicationStatus.Rejected);
+        ViewBag.PendingCount = applications.Count(a => a.Status == ApplicationStatus.ManualReview); 
 
         return View(applications);
     }
@@ -41,8 +42,7 @@ public class LoanController : Controller
     {
         var user = await _userManager.GetUserAsync(User);
     
-        // ИЗМЕНЕНО: Передаем список кредитных продуктов во View для выпадающего списка
-        var products = await _context.LoanProducts.ToListAsync();
+        var products = await _context.LoanProducts.Where(p => p.IsActive).ToListAsync();
         ViewBag.Products = new SelectList(products, "Id", "Name");
 
         var model = new LoanApplication
@@ -59,21 +59,19 @@ public class LoanController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(LoanApplication application)
     {
-        // ИЗМЕНЕНО: Защита от деления на ноль при расчете DTI
         if (application.IncomeAmount <= 0)
         {
-            ModelState.AddModelError("IncomeAmount", "Доход должен быть больше нуля");
+            ModelState.AddModelError("IncomeAmount", "Основной доход должен быть больше нуля");
         }
 
         if (ModelState.IsValid)
         {
             var user = await _userManager.GetUserAsync(User);
         
-            // ИЗМЕНЕНО: Жесткая привязка заявки к ID авторизованного клиента
             application.UserId = user.Id;
-
-            application.StatusId = 2; // "На скоринге"
+            application.Status = ApplicationStatus.InScoring; // ИСПОЛЬЗУЕМ ENUM
             application.CreatedAt = DateTime.UtcNow;
+            application.UpdatedAt = DateTime.UtcNow;
         
             _context.LoanApplications.Add(application);
             await _context.SaveChangesAsync();
@@ -81,81 +79,122 @@ public class LoanController : Controller
             return RedirectToAction("ProcessScoring", new { id = application.Id });
         }
         
-        // Если ошибка валидации, нужно заново заполнить ViewBag для dropdown
-        ViewBag.Products = new SelectList(await _context.LoanProducts.ToListAsync(), "Id", "Name", application.LoanProductId);
+        var products = await _context.LoanProducts.Where(p => p.IsActive).ToListAsync();
+        ViewBag.Products = new SelectList(products, "Id", "Name", application.LoanProductId);
         return View(application);
     }
     
-    // Метод ProcessScoring остается без изменений, он считает только математику!
+    // Обновленный метод скоринга с учетом новых полей и Enum
     [HttpGet]
     public async Task<IActionResult> ProcessScoring(Guid id)
     {
-        
         var app = await _context.LoanApplications.FindAsync(id);
-        var rules = await _context.ScoringRules.Where(r => r.IsActive).ToListAsync();
-        
         if (app == null) return NotFound();
 
+        var rules = await _context.ScoringRules.Where(r => r.IsActive).ToListAsync();
         int totalScore = 0;
-        var details = new List<string>();
+        var details = new Dictionary<string, string>(); // Заменили список на словарь для красивого JSON
 
+        // 1. ЖЕСТКИЙ АНТИФРОД КОНТРОЛЬ
         var age = DateTime.Today.Year - app.BirthDate.Year;
         if (app.BirthDate > DateTime.Today.AddYears(-age)) age--;
 
         if (age < 21 || age > 65) {
-            return await FinishScoring(app, 0, "Rejected", "АНТИФРОД: Возраст вне диапазона 21-65");
+            return await FinishScoring(app, 0, ScoringDecision.Rejected, "{\"Антифрод\": \"Возраст вне диапазона 21-65\"}");
         }
+        
+        if (app.HasPastDelinquencies) {
+            return await FinishScoring(app, 0, ScoringDecision.Rejected, "{\"Антифрод\": \"Наличие открытых просрочек в Кредитном Бюро\"}");
+        }
+
         var isBlacklisted = await _context.BlackListEntries.AnyAsync(b => b.Inn == app.Inn);
-        if (isBlacklisted)
-        {
-            return await FinishScoring(app, 0, "Rejected", "АНТИФРОД: Клиент находится в черном списке");
+        if (isBlacklisted) {
+            return await FinishScoring(app, 0, ScoringDecision.Rejected, "{\"Антифрод\": \"Клиент находится в черном списке\"}");
         }
-        var ageRule = rules.FirstOrDefault(r => r.ParameterName == "Age" && age >= r.MinValue && age <= r.MaxValue);
+
+        // 2. МАТЕМАТИКА ПО ENUM-ПРАВИЛАМ
+        
+        // Возраст
+        var ageRule = rules.FirstOrDefault(r => r.Parameter == ScoringParameter.Age && age >= r.MinValue && age <= r.MaxValue);
         if (ageRule != null) {
             totalScore += ageRule.WeightPoints;
-            details.Add($"Возраст ({age} лет): +{ageRule.WeightPoints} баллов");
+            details.Add("Возраст", $"{age} лет ({ageRule.WeightPoints} б.)");
         }
 
-        var incomeRule = rules.FirstOrDefault(r => r.ParameterName == "Income" && app.IncomeAmount >= r.MinValue && app.IncomeAmount <= r.MaxValue);
+        // Общий доход (Основной + Дополнительный)
+        var totalIncome = app.IncomeAmount + app.AdditionalIncome;
+        var incomeRule = rules.FirstOrDefault(r => r.Parameter == ScoringParameter.Income && totalIncome >= r.MinValue && totalIncome <= r.MaxValue);
         if (incomeRule != null) {
             totalScore += incomeRule.WeightPoints;
-            details.Add($"Доход ({app.IncomeAmount} сом): +{incomeRule.WeightPoints} баллов");
+            details.Add("Доход", $"{totalIncome} сом ({incomeRule.WeightPoints} б.)");
         }
 
-        var expRule = rules.FirstOrDefault(r => r.ParameterName == "Experience" && app.EmploymentYears >= r.MinValue && app.EmploymentYears <= r.MaxValue);
+        // Стаж
+        var expRule = rules.FirstOrDefault(r => r.Parameter == ScoringParameter.Experience && app.EmploymentYears >= r.MinValue && app.EmploymentYears <= r.MaxValue);
         if (expRule != null) {
             totalScore += expRule.WeightPoints;
-            details.Add($"Стаж ({app.EmploymentYears} лет): +{expRule.WeightPoints} баллов");
+            details.Add("Стаж", $"{app.EmploymentYears} лет ({expRule.WeightPoints} б.)");
         }
 
+        // DTI (Долговая нагрузка)
         decimal monthlyPayment = app.Amount / app.TermMonths;
-        decimal dti = (monthlyPayment / app.IncomeAmount) * 100;
-        var dtiRule = rules.FirstOrDefault(r => r.ParameterName == "DTI" && dti >= r.MinValue && dti <= r.MaxValue);
+        decimal dti = totalIncome > 0 ? (monthlyPayment / totalIncome) * 100 : 100;
+        var dtiRule = rules.FirstOrDefault(r => r.Parameter == ScoringParameter.DTI && dti >= r.MinValue && dti <= r.MaxValue);
         if (dtiRule != null) {
             totalScore += dtiRule.WeightPoints;
-            details.Add($"Нагрузка DTI ({dti:F1}%): {dtiRule.WeightPoints} баллов");
+            details.Add("DTI", $"{dti:F1}% ({dtiRule.WeightPoints} б.)");
         }
 
-        string decision;
-        if (totalScore >= 70) decision = "Approved";       
-        else if (totalScore >= 40) decision = "ManualReview"; 
-        else decision = "Rejected";                        
+        // Иждивенцы
+        var depRule = rules.FirstOrDefault(r => r.Parameter == ScoringParameter.DependentsCount && app.DependentsCount >= r.MinValue && app.DependentsCount <= r.MaxValue);
+        if (depRule != null) {
+            totalScore += depRule.WeightPoints;
+            details.Add("Иждивенцы", $"{app.DependentsCount} чел. ({depRule.WeightPoints} б.)");
+        }
 
-        return await FinishScoring(app, totalScore, decision, string.Join("; ", details));
+        // Наличие активов (Недвижимость/Авто)
+        var realEstateRule = rules.FirstOrDefault(r => r.Parameter == ScoringParameter.HasRealEstate && (app.HasRealEstate ? 1 : 0) >= r.MinValue && (app.HasRealEstate ? 1 : 0) <= r.MaxValue);
+        if (realEstateRule != null) {
+            totalScore += realEstateRule.WeightPoints;
+            details.Add("Недвижимость", app.HasRealEstate ? $"Да ({realEstateRule.WeightPoints} б.)" : "Нет");
+        }
+
+        var vehicleRule = rules.FirstOrDefault(r => r.Parameter == ScoringParameter.HasVehicle && (app.HasVehicle ? 1 : 0) >= r.MinValue && (app.HasVehicle ? 1 : 0) <= r.MaxValue);
+        if (vehicleRule != null) {
+            totalScore += vehicleRule.WeightPoints;
+            details.Add("Автомобиль", app.HasVehicle ? $"Да ({vehicleRule.WeightPoints} б.)" : "Нет");
+        }
+
+        // 3. ПРИНЯТИЕ РЕШЕНИЯ
+        ScoringDecision decision;
+        if (totalScore >= 70) decision = ScoringDecision.Approved;       
+        else if (totalScore >= 40) decision = ScoringDecision.ManualReview; 
+        else decision = ScoringDecision.Rejected;                        
+
+        string jsonLog = JsonSerializer.Serialize(details); // Сохраняем в красивом JSON формате
+
+        return await FinishScoring(app, totalScore, decision, jsonLog);
     }
 
-    private async Task<IActionResult> FinishScoring(LoanApplication app, int score, string decision, string log)
+    private async Task<IActionResult> FinishScoring(LoanApplication app, int score, ScoringDecision decision, string jsonLog)
     {
         var result = new ScoringResult {
             ApplicationId = app.Id,
             TotalScore = score,
             Decision = decision,
-            RawResponseJson = log,
+            RawResponseJson = jsonLog,
             CalculatedAt = DateTime.UtcNow
         };
 
-        app.StatusId = (decision == "Approved") ? 3 : (decision == "Rejected" ? 4 : 5);
+        app.Status = decision switch
+        {
+            ScoringDecision.Approved => ApplicationStatus.Approved,
+            ScoringDecision.Rejected => ApplicationStatus.Rejected,
+            _ => ApplicationStatus.ManualReview
+        };
         
+        app.UpdatedAt = DateTime.UtcNow;
+
         _context.ScoringResults.Add(result);
         _context.Update(app);
         await _context.SaveChangesAsync();
@@ -165,12 +204,18 @@ public class LoanController : Controller
     [Authorize(Roles = "admin, officer")]
     public async Task<IActionResult> Dashboard()
     {
-        var stats = await _context.LoanApplications
-            .GroupBy(a => a.Status.Name)
-            .Select(g => new { Status = g.Key, Count = g.Count() })
+        // Группировка по Enum
+        var statsRaw = await _context.LoanApplications
+            .GroupBy(a => a.Status)
+            .Select(g => new { StatusEnum = g.Key, Count = g.Count() })
             .ToListAsync();
 
-        // ИЗМЕНЕНО: Теперь группируем по названию связанного продукта, а не по строке
+        // Преобразуем Enum в строку на стороне сервера, чтобы избежать ошибок трансляции SQL
+        var stats = statsRaw.Select(s => new { 
+            Status = s.StatusEnum.ToString(), // Можно заменить на GetDisplayName(), если есть хелпер
+            Count = s.Count 
+        }).ToList();
+
         var types = await _context.LoanApplications
             .Include(a => a.LoanProduct)
             .GroupBy(a => a.LoanProduct.Name)
@@ -190,16 +235,13 @@ public class LoanController : Controller
     {
         var result = await _context.ScoringResults
             .Include(r => r.Application)
-                .ThenInclude(a => a.Status)
-            .Include(r => r.Application)
-                .ThenInclude(a => a.LoanProduct) // ИЗМЕНЕНО: Добавили Include для продукта
+                .ThenInclude(a => a.LoanProduct)
             .FirstOrDefaultAsync(r => r.ApplicationId == id);
 
         if (result == null) 
         {
             var application = await _context.LoanApplications
-                .Include(a => a.Status)
-                .Include(a => a.LoanProduct) // ИЗМЕНЕНО
+                .Include(a => a.LoanProduct)
                 .FirstOrDefaultAsync(a => a.Id == id);
                 
             if (application == null) return NotFound();
@@ -214,9 +256,7 @@ public class LoanController : Controller
     {
         var currentUser = await _userManager.GetUserAsync(User);
     
-        // ИЗМЕНЕНО: Надежный поиск по Foreign Key и подтягивание продукта
         var myApps = await _context.LoanApplications
-            .Include(a => a.Status)
             .Include(a => a.LoanProduct)
             .Where(a => a.UserId == currentUser.Id) 
             .OrderByDescending(a => a.CreatedAt)
@@ -230,15 +270,14 @@ public class LoanController : Controller
     {
         var result = await _context.ScoringResults
             .Include(r => r.Application)
-                .ThenInclude(a => a.LoanProduct) // ИЗМЕНЕНО: Чтобы получить название
+                .ThenInclude(a => a.LoanProduct) 
             .FirstOrDefaultAsync(r => r.ApplicationId == id);
 
-        if (result == null || result.Decision != "Approved")
+        if (result == null || result.Decision != ScoringDecision.Approved)
         {
             return BadRequest("Договор доступен только для одобренных заявок.");
         }
 
-        // ИЗМЕНЕНО: Вызываем result.Application.LoanProduct.Name
         var content = $@"
         ИНДИВИДУАЛЬНЫЕ УСЛОВИЯ КРЕДИТНОГО ДОГОВОРА № {result.ApplicationId.ToString().Substring(0, 8)}
         ------------------------------------------------------------

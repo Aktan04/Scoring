@@ -20,10 +20,12 @@ public class AdminController : Controller
     public async Task<IActionResult> VerificationQueue()
     {
         var queue = await _context.LoanApplications
-            .Include(a => a.Status)
+            // .Include(a => a.Status) <--- УДАЛЕНО! Это больше не нужно
             .Include(a => a.LoanProduct)
-            .Where(a => a.StatusId == 5) // Ручная проверка [cite: 7]
+            .Where(a => a.Status == ApplicationStatus.ManualReview) // ИСПОЛЬЗУЕМ ENUM
+            .OrderBy(a => a.CreatedAt)
             .ToListAsync();
+            
         return View(queue);
     }
 
@@ -31,26 +33,29 @@ public class AdminController : Controller
     public async Task<IActionResult> ApproveManual(Guid id, bool isApproved, string comment)
     {
         var app = await _context.LoanApplications.FindAsync(id);
-        var officer = await _userManager.GetUserAsync(User);
         if (app == null) return NotFound();
 
-        int oldStatus = app.StatusId;
-        int newStatus = isApproved ? 3 : 4; // Одобрено (3) или Отказ (4) [cite: 6]
+        var officer = await _userManager.GetUserAsync(User);
 
-        // 1. Создаем запись в твоей модели истории 
+        // Строгая типизация вместо int
+        ApplicationStatus oldStatus = app.Status;
+        ApplicationStatus newStatus = isApproved ? ApplicationStatus.Approved : ApplicationStatus.Rejected; 
+
+        // 1. Создаем запись в истории
         var historyEntry = new ApplicationHistory
         {
             ApplicationId = app.Id,
-            OldStatusId = oldStatus,
-            NewStatusId = newStatus,
+            OldStatus = oldStatus,
+            NewStatus = newStatus,
             ChangedById = officer.Id,
             Comment = comment,
             ChangedAt = DateTime.UtcNow
         };
 
         // 2. Обновляем заявку
-        app.StatusId = newStatus;
+        app.Status = newStatus;
         app.OfficerId = officer.Id;
+        app.UpdatedAt = DateTime.UtcNow; // Фиксируем время изменения
 
         _context.ApplicationHistories.Add(historyEntry);
         _context.Update(app);
@@ -63,7 +68,7 @@ public class AdminController : Controller
     public async Task<IActionResult> ApplicationDetails(Guid id)
     {
         var application = await _context.LoanApplications
-            .Include(a => a.Status)
+            // .Include(a => a.Status) <--- УДАЛЕНО!
             .Include(a => a.LoanProduct)
             .FirstOrDefaultAsync(a => a.Id == id);
 

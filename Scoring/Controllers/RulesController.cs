@@ -1,4 +1,3 @@
-using CreditScoringSystem.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,12 +18,12 @@ public class RulesController : Controller
     // Чтение (Read) - Список всех правил
     public async Task<IActionResult> Index()
     {
-        // Сортируем сначала по параметру, затем по минимальному значению
-        // Это сгруппирует логику в таблице
+        // ИЗМЕНЕНО: Сортируем по новому полю Parameter (Enum), а затем по минимальному значению
         var rules = await _context.ScoringRules
-            .OrderBy(r => r.ParameterName)
+            .OrderBy(r => r.Parameter)
             .ThenBy(r => r.MinValue)
             .ToListAsync();
+            
         return View(rules);
     }
 
@@ -76,7 +75,7 @@ public class RulesController : Controller
                 else
                     throw;
             }
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Index)); // [cite: 1]
         }
         return View(rule);
     }

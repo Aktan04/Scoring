@@ -1,59 +1,72 @@
-@using Microsoft.AspNetCore.Mvc.TagHelpers
-@model CreditScoringSystem.Models.ScoringResult
+@model Scoring.Models.ScoringResult
+@using Scoring.Models
+@using System.Text.Json
 
 @{
     ViewData["Title"] = "Результат скоринга";
     var app = Model.Application;
-    var isApproved = Model.Decision == "Approved";
+    var isApproved = Model.Decision == ScoringDecision.Approved;
 }
 
-<div class="container mt-4">
+<div class="container mt-4 mb-5">
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <div class="card shadow border-0 overflow-hidden">
-                <div class="bg-@(isApproved ? "success" : (Model.Decision == "ManualReview" ? "warning" : "danger")) p-4 text-center text-white">
+            <div class="card shadow border-0 rounded-4 overflow-hidden">
+                <div class="bg-@(isApproved ? "success" : (Model.Decision == ScoringDecision.ManualReview ? "warning" : "danger")) p-5 text-center text-white">
                     <h1 class="display-1 fw-bold mb-0">@Model.TotalScore</h1>
-                    <p class="mb-0 fs-5">Итоговый балл</p>
+                    <p class="mb-0 fs-5 text-white-50 mt-2">Итоговый скоринговый балл</p>
                 </div>
-                <div class="card-body p-5">
-                    <h4 class="fw-bold mb-4 text-center">Решение системы:
-                        <span class="text-@(isApproved ? "success" : (Model.Decision == "ManualReview" ? "warning text-dark" : "danger"))">
-                            @app.Status?.Name
+                <div class="card-body p-5 bg-white">
+                    <h4 class="fw-bold mb-5 text-center text-dark">Решение системы:
+                        <span class="text-@(isApproved ? "success" : (Model.Decision == ScoringDecision.ManualReview ? "warning text-dark" : "danger"))">
+                            @Html.DisplayFor(modelItem => app.Status)
                         </span>
                     </h4>
 
-                    <div class="bg-light rounded p-4 mb-4 border">
-                        <h6 class="fw-bold text-muted text-uppercase mb-3">Информация по заявке</h6>
-                        <div class="row">
-                            <div class="col-sm-6 mb-2"><strong>Клиент:</strong> @app.LastName @app.FirstName</div>
-                            <div class="col-sm-6 mb-2"><strong>Продукт:</strong> @app.LoanProduct?.Name</div>
-                            <div class="col-sm-6 mb-2"><strong>Сумма:</strong> @app.Amount.ToString("N0") сом</div>
-                            <div class="col-sm-6 mb-2"><strong>Срок:</strong> @app.TermMonths мес.</div>
+                    <div class="bg-light rounded-4 p-4 mb-5 border">
+                        <h6 class="fw-bold text-secondary text-uppercase small mb-4"><i class="bi bi-file-earmark-person-fill me-2"></i>Информация по заявке</h6>
+                        <div class="row g-3">
+                            <div class="col-sm-6"><strong>Клиент:</strong> <span class="float-end">@app.LastName @app.FirstName</span></div>
+                            <div class="col-sm-6"><strong>Продукт:</strong> <span class="float-end">@app.LoanProduct?.Name</span></div>
+                            <div class="col-sm-6"><strong>Сумма:</strong> <span class="float-end text-primary fw-bold">@app.Amount.ToString("N0") сом</span></div>
+                            <div class="col-sm-6"><strong>Срок:</strong> <span class="float-end">@app.TermMonths мес.</span></div>
                         </div>
                     </div>
 
-                    <h6 class="fw-bold text-muted text-uppercase mb-3">Детализация расчета</h6>
-                    <ul class="list-group list-group-flush mb-4">
-                        @foreach (var log in Model.RawResponseJson.Split(';'))
-                        {
-                            if (!string.IsNullOrWhiteSpace(log))
+                    <h6 class="fw-bold text-secondary text-uppercase small mb-3"><i class="bi bi-calculator-fill me-2"></i>Детализация математики</h6>
+                    <ul class="list-group list-group-flush mb-5 rounded-3 border">
+                        @{
+                            Dictionary<string, string> logs = new();
+                            if (!string.IsNullOrEmpty(Model.RawResponseJson))
                             {
-                                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                    <span><i class="bi bi-check2-circle text-primary me-2"></i> @log.Split(':')[0]</span>
-                                    <span class="fw-bold">@log.Split(':').LastOrDefault()</span>
+                                try { logs = JsonSerializer.Deserialize<Dictionary<string, string>>(Model.RawResponseJson); } catch { }
+                            }
+                        }
+
+                        @if(logs.Any())
+                        {
+                            foreach (var kvp in logs)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                    <span class="text-muted fw-bold">@kvp.Key</span>
+                                    <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm">@kvp.Value</span>
                                 </li>
                             }
                         }
+                        else
+                        {
+                            <li class="list-group-item p-3 text-center text-muted">Детализация недоступна или заявка отклонена по антифроду</li>
+                        }
                     </ul>
 
-                    <div class="text-center mt-4">
+                    <div class="d-grid gap-3 d-md-flex justify-content-md-center">
+                        <a asp-action="MyApplications" class="btn btn-light btn-lg px-5 rounded-pill shadow-sm fw-bold">Вернуться к списку</a>
                         @if (isApproved)
                         {
-                            <a asp-action="DownloadContract" asp-route-id="@app.Id" class="btn btn-success btn-lg px-5 shadow-sm">
-                                <i class="bi bi-download me-2"></i>Скачать договор
+                            <a asp-action="DownloadContract" asp-route-id="@app.Id" class="btn btn-success btn-lg px-5 shadow-sm rounded-pill fw-bold">
+                                <i class="bi bi-download me-2"></i>Договор
                             </a>
                         }
-                        <a asp-action="MyApplications" class="btn btn-outline-secondary btn-lg ms-2">Вернуться к списку</a>
                     </div>
                 </div>
             </div>

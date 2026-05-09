@@ -1,82 +1,165 @@
 @model Scoring.Models.LoanApplication
+@using Scoring.Models
 
 @{
     ViewData["Title"] = "Оформление кредита";
 }
 
-<div class="container mt-5">
+<div class="container mt-5 mb-5">
     <div class="row justify-content-center">
-        <div class="col-lg-8">
+        <div class="col-lg-10">
             <div class="card shadow-lg border-0 rounded-4">
-                <div class="card-header bg-primary text-white p-4 text-center rounded-top-4">
-                    <h3 class="mb-0 fw-bold"><i class="bi bi-wallet2 me-2"></i>Заявка на кредит</h3>
-                    <p class="mb-0 text-white-50 small">Заполните данные для автоматического скоринга</p>
+                <div class="card-header bg-primary text-white p-4 text-center rounded-top-4 border-0">
+                    <h3 class="mb-0 fw-bold"><i class="bi bi-wallet2 me-2"></i>Кредитная анкета</h3>
+                    <p class="mb-0 text-white-50 small mt-1">Заполните данные для интеллектуальной оценки</p>
                 </div>
-                <div class="card-body p-5">
+                <div class="card-body p-4 p-md-5 bg-light bg-opacity-50">
                     <form asp-action="Create" method="post">
                         <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
-                        <h5 class="fw-bold text-secondary border-bottom pb-2 mb-4">Параметры кредита</h5>
+                        <div class="card border-0 shadow-sm mb-4 rounded-4">
+                            <div class="card-body p-4">
+                                <h5 class="fw-bold text-primary mb-4"><i class="bi bi-cash-coin me-2"></i>Параметры кредита</h5>
 
-                        <div class="mb-4">
-                            <label asp-for="LoanProductId" class="form-label fw-bold">Выберите кредитный продукт</label>
-                            <select asp-for="LoanProductId" class="form-select form-select-lg" asp-items="ViewBag.Products" required>
-                                <option value="">-- Выберите продукт --</option>
-                            </select>
-                            <span asp-validation-for="LoanProductId" class="text-danger small"></span>
-                        </div>
-
-                        <div class="row g-4 mb-4">
-                            <div class="col-md-6">
-                                <label asp-for="Amount" class="form-label fw-bold">Желаемая сумма (сом)</label>
-                                <div class="input-group">
-                                    <input asp-for="Amount" type="number" class="form-control form-control-lg" placeholder="Например: 150000" required />
+                                <div class="mb-4">
+                                    <label asp-for="LoanProductId" class="form-label fw-bold text-secondary small text-uppercase">Выберите кредитный продукт</label>
+                                    <select asp-for="LoanProductId" class="form-select form-select-lg" asp-items="ViewBag.Products" required>
+                                        <option value="">-- Выберите продукт --</option>
+                                    </select>
+                                    <span asp-validation-for="LoanProductId" class="text-danger small"></span>
                                 </div>
-                                <span asp-validation-for="Amount" class="text-danger small"></span>
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="TermMonths" class="form-label fw-bold">Срок кредита (мес.)</label>
-                                <input asp-for="TermMonths" type="number" class="form-control form-control-lg" placeholder="От 3 до 60" required />
-                                <span asp-validation-for="TermMonths" class="text-danger small"></span>
+
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <label asp-for="Amount" class="form-label fw-bold text-secondary small text-uppercase">Желаемая сумма (сом)</label>
+                                        <input asp-for="Amount" type="number" class="form-control form-control-lg bg-light" placeholder="Например: 150000" required />
+                                        <span asp-validation-for="Amount" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label asp-for="TermMonths" class="form-label fw-bold text-secondary small text-uppercase">Срок кредита (мес.)</label>
+                                        <input asp-for="TermMonths" type="number" class="form-control form-control-lg bg-light" placeholder="От 3 до 240" required />
+                                        <span asp-validation-for="TermMonths" class="text-danger small"></span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <h5 class="fw-bold text-secondary border-bottom pb-2 mb-4 mt-5">Личные и финансовые данные</h5>
+                        <div class="card border-0 shadow-sm mb-4 rounded-4">
+                            <div class="card-body p-4">
+                                <h5 class="fw-bold text-primary mb-4"><i class="bi bi-person-vcard me-2"></i>Личные данные</h5>
 
-                        <div class="row g-4 mb-4">
-                            <div class="col-md-6">
-                                <label asp-for="FirstName" class="form-label fw-bold">Имя</label>
-                                <input asp-for="FirstName" class="form-control" readonly />
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="LastName" class="form-label fw-bold">Фамилия</label>
-                                <input asp-for="LastName" class="form-control" readonly />
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="Inn" class="form-label fw-bold">ИНН</label>
-                                <input asp-for="Inn" class="form-control" placeholder="14 символов" required />
-                                <span asp-validation-for="Inn" class="text-danger small"></span>
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="BirthDate" class="form-label fw-bold">Дата рождения</label>
-                                <input asp-for="BirthDate" type="date" class="form-control" required />
-                                <span asp-validation-for="BirthDate" class="text-danger small"></span>
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="IncomeAmount" class="form-label fw-bold">Ежемесячный доход (сом)</label>
-                                <input asp-for="IncomeAmount" type="number" class="form-control" required />
-                                <span asp-validation-for="IncomeAmount" class="text-danger small"></span>
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="EmploymentYears" class="form-label fw-bold">Стаж работы (лет)</label>
-                                <input asp-for="EmploymentYears" type="number" step="0.5" class="form-control" required />
-                                <span asp-validation-for="EmploymentYears" class="text-danger small"></span>
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <label asp-for="FirstName" class="form-label fw-bold">Имя</label>
+                                        <input asp-for="FirstName" class="form-control" readonly />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label asp-for="LastName" class="form-label fw-bold">Фамилия</label>
+                                        <input asp-for="LastName" class="form-control" readonly />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label asp-for="Inn" class="form-label fw-bold">ИНН</label>
+                                        <input asp-for="Inn" class="form-control" placeholder="14 символов" required />
+                                        <span asp-validation-for="Inn" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label asp-for="PassportSerial" class="form-label fw-bold">Серия/Номер паспорта</label>
+                                        <input asp-for="PassportSerial" class="form-control" placeholder="ID1234567" required />
+                                        <span asp-validation-for="PassportSerial" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label asp-for="BirthDate" class="form-label fw-bold">Дата рождения</label>
+                                        <input asp-for="BirthDate" type="date" class="form-control" required />
+                                        <span asp-validation-for="BirthDate" class="text-danger small"></span>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <label asp-for="MaritalStatus" class="form-label fw-bold">Семейное положение</label>
+                                        <select asp-for="MaritalStatus" class="form-select" asp-items="Html.GetEnumSelectList<MaritalStatus>()" required>
+                                            <option value="">-- Выберите --</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label asp-for="EducationLevel" class="form-label fw-bold">Образование</label>
+                                        <select asp-for="EducationLevel" class="form-select" asp-items="Html.GetEnumSelectList<EducationLevel>()" required>
+                                            <option value="">-- Выберите --</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label asp-for="DependentsCount" class="form-label fw-bold">Количество иждивенцев</label>
+                                        <input asp-for="DependentsCount" type="number" class="form-control" placeholder="Дети до 18 лет" required />
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="d-grid gap-2 mt-5">
-                            <button type="submit" class="btn btn-primary btn-lg fw-bold">Отправить на проверку</button>
-                            <a asp-action="MyApplications" class="btn btn-light">Отмена</a>
+                        <div class="card border-0 shadow-sm mb-4 rounded-4">
+                            <div class="card-body p-4">
+                                <h5 class="fw-bold text-primary mb-4"><i class="bi bi-briefcase me-2"></i>Трудоустройство и финансы</h5>
+
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <label asp-for="EmploymentType" class="form-label fw-bold">Тип занятости</label>
+                                        <select asp-for="EmploymentType" class="form-select" asp-items="Html.GetEnumSelectList<EmploymentType>()" required>
+                                            <option value="">-- Выберите --</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label asp-for="EmployerIndustry" class="form-label fw-bold">Отрасль компании</label>
+                                        <input asp-for="EmployerIndustry" class="form-control" placeholder="IT, Торговля, Госсектор и т.д." required />
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <label asp-for="IncomeAmount" class="form-label fw-bold text-success">Основной доход (сом)</label>
+                                        <input asp-for="IncomeAmount" type="number" class="form-control fw-bold" required />
+                                        <span asp-validation-for="IncomeAmount" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label asp-for="AdditionalIncome" class="form-label fw-bold">Доп. доход (сом)</label>
+                                        <input asp-for="AdditionalIncome" type="number" class="form-control" value="0" required />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label asp-for="EmploymentYears" class="form-label fw-bold">Общий стаж (лет)</label>
+                                        <input asp-for="EmploymentYears" type="number" class="form-control" required />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card border-0 shadow-sm mb-4 rounded-4">
+                            <div class="card-body p-4">
+                                <h5 class="fw-bold text-primary mb-4"><i class="bi bi-house-check me-2"></i>Активы и Кредитная история</h5>
+
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <div class="p-3 border rounded-3 bg-light">
+                                            <div class="form-check form-switch fs-5 mb-2">
+                                                <input class="form-check-input" type="checkbox" asp-for="HasRealEstate">
+                                                <label class="form-check-label fs-6 fw-bold" asp-for="HasRealEstate">Есть недвижимость</label>
+                                            </div>
+                                            <div class="form-check form-switch fs-5">
+                                                <input class="form-check-input" type="checkbox" asp-for="HasVehicle">
+                                                <label class="form-check-label fs-6 fw-bold" asp-for="HasVehicle">Есть автомобиль</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label asp-for="ActiveLoansCount" class="form-label fw-bold">Количество текущих кредитов в других банках</label>
+                                            <input asp-for="ActiveLoansCount" type="number" class="form-control" value="0" required />
+                                        </div>
+                                        <div class="form-check form-switch fs-5 text-danger">
+                                            <input class="form-check-input bg-danger border-danger" type="checkbox" asp-for="HasPastDelinquencies">
+                                            <label class="form-check-label fs-6 fw-bold" asp-for="HasPastDelinquencies">У меня были просрочки более 30 дней</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-3 d-md-flex justify-content-md-end mt-5">
+                            <a asp-action="MyApplications" class="btn btn-light btn-lg px-5 shadow-sm rounded-pill">Отмена</a>
+                            <button type="submit" class="btn btn-primary btn-lg px-5 fw-bold shadow-sm rounded-pill">Отправить на скоринг <i class="bi bi-arrow-right ms-2"></i></button>
                         </div>
                     </form>
                 </div>

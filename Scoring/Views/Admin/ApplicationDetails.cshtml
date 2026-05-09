@@ -1,71 +1,168 @@
 @model Scoring.Models.LoanApplication
+@using Scoring.Models
 
 @{
     ViewData["Title"] = "Детали заявки";
     var history = ViewBag.History as IEnumerable<Scoring.Models.ApplicationHistory>;
+    var isPending = Model.Status == ApplicationStatus.ManualReview;
 }
 
-<div class="container mt-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a asp-action="VerificationQueue">Очередь</a></li>
-            <li class="breadcrumb-item active">Заявка @Model.Id.ToString().Substring(0, 8)</li>
+<div class="container-fluid mt-4 mb-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb bg-white p-3 rounded-4 shadow-sm border">
+            <li class="breadcrumb-item"><a asp-action="VerificationQueue" class="text-decoration-none fw-bold"><i class="bi bi-inbox-fill me-1"></i>Очередь</a></li>
+            <li class="breadcrumb-item active fw-bold">Заявка № @Model.Id.ToString().Substring(0, 8)</li>
         </ol>
     </nav>
 
-    <div class="row">
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Информация о клиенте</h5>
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 rounded-4 mb-4">
+                <div class="card-header bg-white p-4 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-person-vcard text-primary me-2"></i>Анкета клиента</h5>
+                    <span class="badge px-3 py-2 rounded-pill @(Model.Status == ApplicationStatus.Approved ? "bg-success" :
+                                                                  (Model.Status == ApplicationStatus.Rejected ? "bg-danger" : "bg-warning text-dark"))">
+                        @Html.DisplayFor(m => Model.Status)
+                    </span>
                 </div>
-                <div class="card-body">
-                    <p><strong>ФИО:</strong> @Model.LastName @Model.FirstName</p>
-                    <p><strong>ИНН:</strong> @Model.Inn</p>
-                    <p><strong>Сумма:</strong> @Model.Amount.ToString("N0") сом</p>
-                    <p><strong>Продукт:</strong> @Model.LoanProduct?.Name</p>
-                    <hr />
-                    <p><strong>Текущий статус:</strong> 
-                        <span class="badge @(Model.StatusId == 3 ? "bg-success" : "bg-warning")">
-                            @Model.Status?.Name
-                        </span>
-                    </p>
+                <div class="card-body p-4 bg-light bg-opacity-50">
+                    <h6 class="fw-bold text-secondary text-uppercase small mb-3">Параметры кредита</h6>
+                    <div class="row mb-4 bg-white p-3 rounded-3 border shadow-sm mx-0">
+                        <div class="col-sm-4 border-end">
+                            <p class="text-muted small mb-1">Сумма</p>
+                            <h5 class="text-primary fw-bold mb-0">@Model.Amount.ToString("N0") сом</h5>
+                        </div>
+                        <div class="col-sm-4 border-end">
+                            <p class="text-muted small mb-1">Срок</p>
+                            <h5 class="fw-bold mb-0 text-dark">@Model.TermMonths мес.</h5>
+                        </div>
+                        <div class="col-sm-4">
+                            <p class="text-muted small mb-1">Продукт</p>
+                            <h6 class="fw-bold mb-0 text-dark mt-1">@Model.LoanProduct?.Name</h6>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-secondary text-uppercase small mb-3">Данные заемщика</h6>
+                    <ul class="list-group list-group-flush border rounded-3 shadow-sm mb-4">
+                        <li class="list-group-item d-flex justify-content-between p-3">
+                            <span class="text-muted">ФИО</span>
+                            <span class="fw-bold">@Model.LastName @Model.FirstName</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between p-3">
+                            <span class="text-muted">ИНН / Паспорт</span>
+                            <span class="fw-bold">@Model.Inn / @Model.PassportSerial</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between p-3">
+                            <span class="text-muted">Семья и дети</span>
+                            <span class="fw-bold">@Html.DisplayFor(m => m.MaritalStatus), иждивенцев: @Model.DependentsCount</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between p-3">
+                            <span class="text-muted">Образование</span>
+                            <span class="fw-bold">@Html.DisplayFor(m => m.EducationLevel)</span>
+                        </li>
+                    </ul>
+
+                    <h6 class="fw-bold text-secondary text-uppercase small mb-3">Финансы и Активы</h6>
+                    <ul class="list-group list-group-flush border rounded-3 shadow-sm">
+                        <li class="list-group-item d-flex justify-content-between p-3">
+                            <span class="text-muted">Трудоустройство</span>
+                            <span class="fw-bold text-end">@Html.DisplayFor(m => m.EmploymentType)<br><small class="text-muted fw-normal">@Model.EmployerIndustry (@Model.EmploymentYears лет стажа)</small></span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between p-3">
+                            <span class="text-muted">Доход (Осн. + Доп.)</span>
+                            <span class="fw-bold text-success">@Model.IncomeAmount.ToString("N0") + @Model.AdditionalIncome.ToString("N0") сом</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between p-3">
+                            <span class="text-muted">Активы</span>
+                            <span>
+                                @if(Model.HasRealEstate){ <span class="badge bg-info me-1">Недвижимость</span> }
+                                @if(Model.HasVehicle){ <span class="badge bg-secondary">Автомобиль</span> }
+                                @if(!Model.HasRealEstate && !Model.HasVehicle){ <span class="text-muted">Нет активов</span> }
+                            </span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between p-3 bg-light">
+                            <span class="text-danger fw-bold">Кредитная история</span>
+                            <span class="fw-bold text-end">
+                                Активных кредитов: @Model.ActiveLoansCount <br>
+                                @if(Model.HasPastDelinquencies)
+                                {
+                                    <span class="text-danger small"><i class="bi bi-exclamation-triangle-fill"></i> Были просрочки</span>
+                                }
+                                else
+                                {
+                                    <span class="text-success small"><i class="bi bi-check-circle-fill"></i> Просрочек нет</span>
+                                }
+                            </span>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-8">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0 text-secondary"><i class="bi bi-clock-history"></i> Журнал изменений</h5>
+        <div class="col-lg-5">
+
+            @if (isPending)
+            {
+                <div class="card shadow border-0 border-top border-warning border-4 rounded-4 mb-4">
+                    <div class="card-header bg-white p-4 border-bottom">
+                        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-person-workspace text-warning me-2"></i>Принять решение</h5>
+                    </div>
+                    <div class="card-body p-4 bg-warning bg-opacity-10">
+                        <form asp-action="ApproveManual" method="post">
+                            <input type="hidden" name="id" value="@Model.Id" />
+
+                            <div class="mb-4">
+                                <label for="comment" class="form-label fw-bold small text-uppercase">Обоснование решения</label>
+                                <textarea name="comment" id="comment" class="form-control border-warning border-opacity-50 shadow-sm" rows="3" placeholder="Укажите причину одобрения или отказа..." required></textarea>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" name="isApproved" value="false" class="btn btn-danger w-100 fw-bold shadow-sm rounded-pill">
+                                    <i class="bi bi-x-circle me-1"></i> Отказать
+                                </button>
+                                <button type="submit" name="isApproved" value="true" class="btn btn-success w-100 fw-bold shadow-sm rounded-pill">
+                                    <i class="bi bi-check-circle me-1"></i> Одобрить
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-                <div class="card-body">
+            }
+
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-white p-4 border-bottom">
+                    <h5 class="mb-0 fw-bold text-secondary"><i class="bi bi-clock-history me-2"></i>Журнал изменений</h5>
+                </div>
+                <div class="card-body p-4">
                     @if (history != null && history.Any())
                     {
-                        <div class="timeline">
+                        <div class="timeline ms-2">
                             @foreach (var item in history)
                             {
-                                <div class="pb-3 border-start border-primary border-2 ps-4 position-relative mb-2">
-                                    <div class="position-absolute translate-middle-x bg-primary rounded-circle" 
-                                         style="width: 12px; height: 12px; left: -1px; top: 0;"></div>
-                                    
-                                    <div class="d-flex justify-content-between">
-                                        <h6 class="mb-1 fw-bold text-primary">Изменение статуса</h6>
-                                        <small class="text-muted">@item.ChangedAt.ToString("g")</small>
+                                <div class="pb-4 border-start border-primary border-2 ps-4 position-relative">
+                                    <div class="position-absolute translate-middle-x bg-primary rounded-circle border border-white border-2 shadow-sm"
+                                         style="width: 16px; height: 16px; left: -1px; top: 0;"></div>
+
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="mb-0 fw-bold text-dark">Статус изменен</h6>
+                                        <small class="text-muted fw-bold">@item.ChangedAt.ToString("dd.MM.yy HH:mm")</small>
                                     </div>
-                                    
-                                    <div class="small mb-2">
-                                        <span class="badge bg-light text-dark border">@item.OldStatusId</span>
-                                        <i class="bi bi-arrow-right mx-1"></i>
-                                        <span class="badge bg-info text-white">@item.NewStatusId</span>
+
+                                    <div class="small mb-3 d-flex align-items-center">
+                                        <span class="badge bg-light text-secondary border">@Html.DisplayFor(m => item.OldStatus)</span>
+                                        <i class="bi bi-arrow-right mx-2 text-muted"></i>
+                                        <span class="badge @(item.NewStatus == ApplicationStatus.Approved ? "bg-success" :
+                                                               (item.NewStatus == ApplicationStatus.Rejected ? "bg-danger" : "bg-primary"))">
+                                            @Html.DisplayFor(m => item.NewStatus)
+                                        </span>
                                     </div>
-                                    
-                                    <p class="mb-1 p-2 bg-light rounded italic" style="font-style: italic;">
+
+                                    <div class="p-3 bg-light rounded-3 border mb-2 text-dark font-monospace small">
                                         "@item.Comment"
-                                    </p>
-                                    
+                                    </div>
+
                                     <div class="text-muted small">
-                                        <i class="bi bi-person-circle"></i> Офицер: <strong>@item.ChangedBy?.FullName</strong>
+                                        <i class="bi bi-person-circle me-1"></i> Исполнитель: <strong>@item.ChangedBy?.FullName</strong>
                                     </div>
                                 </div>
                             }
@@ -73,7 +170,10 @@
                     }
                     else
                     {
-                        <p class="text-muted">История изменений отсутствует.</p>
+                        <div class="text-center py-4">
+                            <i class="bi bi-journal-x text-muted opacity-50 display-4 d-block mb-3"></i>
+                            <p class="text-muted mb-0">История изменений отсутствует.</p>
+                        </div>
                     }
                 </div>
             </div>
@@ -82,6 +182,6 @@
 </div>
 
 <style>
-    .timeline { position: relative; }
-    .italic { color: #555; border-left: 3px solid #dee2e6; }
+    .timeline { position: relative; padding-top: 5px; }
+    .timeline > div:last-child { border-left-color: transparent !important; }
 </style>

@@ -1,105 +1,112 @@
 @model Scoring.Models.LoanApplication
+@using Scoring.Models
 
 @{
     ViewData["Title"] = "Информация по заявке";
-    // Определяем цвет в зависимости от статуса (2 - На скоринге, 5 - Ручная проверка и т.д.)
-    var statusColor = Model.StatusId switch
+    var statusColor = Model.Status switch
     {
-        3 => "success",
-        4 => "danger",
-        5 => "warning",
-        _ => "info"
+        ApplicationStatus.Approved => "success",
+        ApplicationStatus.Rejected => "danger",
+        ApplicationStatus.ManualReview => "warning",
+        ApplicationStatus.InScoring => "info",
+        _ => "secondary"
     };
 }
 
-<div class="container mt-4">
+<div class="container mt-4 mb-5">
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
-                <div class="bg-light p-4 text-center border-bottom border-@statusColor border-4">
-                    <h5 class="text-muted text-uppercase small fw-bold mb-2">Статус заявки № @Model.Id.ToString().Substring(0, 8)</h5>
-                    <div class="d-inline-flex align-items-center bg-@statusColor text-white px-4 py-2 rounded-pill fs-5 shadow-sm">
-                        @if (Model.StatusId == 2)
+            <div class="card shadow border-0 rounded-4 overflow-hidden">
+                <div class="bg-light p-5 text-center border-bottom border-@statusColor border-4">
+                    <h6 class="text-muted text-uppercase small fw-bold mb-3">Заявка № @Model.Id.ToString().Substring(0, 8)</h6>
+                    <div class="d-inline-flex align-items-center bg-@statusColor @(Model.Status == ApplicationStatus.ManualReview ? "text-dark" : "text-white") px-4 py-2 rounded-pill fs-5 shadow-sm fw-bold">
+                        @if (Model.Status == ApplicationStatus.InScoring)
                         {
                             <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                         }
-                        else if (Model.StatusId == 5)
+                        else if (Model.Status == ApplicationStatus.ManualReview)
                         {
                             <i class="bi bi-person-workspace me-2"></i>
                         }
-                        @Model.Status?.Name
+                        @Html.DisplayFor(modelItem => Model.Status)
                     </div>
                 </div>
 
                 <div class="card-body p-5">
-
-                    @if (Model.StatusId == 2)
+                    @if (Model.Status == ApplicationStatus.InScoring)
                     {
-                        <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-5">
-                            <i class="bi bi-info-circle-fill fs-4 text-info me-3"></i>
-                            <div>
-                                Ваша заявка в данный момент проходит автоматическую проверку. Пожалуйста, обновите страницу чуть позже.
+                        <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-5 rounded-4">
+                            <i class="bi bi-info-circle-fill fs-3 text-info me-3"></i>
+                            <div class="fw-bold">
+                                Ваша заявка сейчас проходит автоматический скоринг. Пожалуйста, обновите страницу через минуту.
                             </div>
                         </div>
                     }
-                    else if (Model.StatusId == 5)
+                    else if (Model.Status == ApplicationStatus.ManualReview)
                     {
-                        <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center mb-5">
-                            <i class="bi bi-clock-history fs-4 text-warning me-3"></i>
-                            <div>
+                        <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center mb-5 rounded-4">
+                            <i class="bi bi-clock-history fs-3 text-warning me-3"></i>
+                            <div class="fw-bold text-dark">
                                 Заявка передана на ручное рассмотрение кредитному специалисту. Ожидайте решения.
                             </div>
                         </div>
                     }
 
-                    <h5 class="fw-bold text-secondary border-bottom pb-2 mb-4"><i class="bi bi-card-list me-2"></i>Данные заявки</h5>
-
-                    <div class="row g-4 mb-4">
-                        <div class="col-sm-6">
-                            <p class="text-muted small mb-1">Кредитный продукт</p>
-                            <p class="fw-bold fs-6">@Model.LoanProduct?.Name</p>
-                        </div>
-                        <div class="col-sm-6">
-                            <p class="text-muted small mb-1">Дата подачи</p>
-                            <p class="fw-bold fs-6">@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</p>
-                        </div>
-                        <div class="col-sm-6">
-                            <p class="text-muted small mb-1">Запрашиваемая сумма</p>
-                            <p class="fw-bold fs-6 text-primary">@Model.Amount.ToString("N0") сом</p>
-                        </div>
-                        <div class="col-sm-6">
-                            <p class="text-muted small mb-1">Срок кредитования</p>
-                            <p class="fw-bold fs-6">@Model.TermMonths мес.</p>
+                    <h6 class="fw-bold text-secondary text-uppercase small mb-4"><i class="bi bi-card-list me-2"></i>Параметры кредита</h6>
+                    <div class="p-4 bg-light rounded-4 mb-5">
+                        <div class="row g-4">
+                            <div class="col-sm-6">
+                                <p class="text-muted small mb-1">Кредитный продукт</p>
+                                <p class="fw-bold fs-6 mb-0">@Model.LoanProduct?.Name</p>
+                            </div>
+                            <div class="col-sm-6">
+                                <p class="text-muted small mb-1">Запрашиваемая сумма</p>
+                                <p class="fw-bold fs-6 text-primary mb-0">@Model.Amount.ToString("N0") сом</p>
+                            </div>
+                            <div class="col-sm-6">
+                                <p class="text-muted small mb-1">Срок кредитования</p>
+                                <p class="fw-bold fs-6 mb-0">@Model.TermMonths мес.</p>
+                            </div>
+                            <div class="col-sm-6">
+                                <p class="text-muted small mb-1">Дата подачи</p>
+                                <p class="fw-bold fs-6 mb-0">@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</p>
+                            </div>
                         </div>
                     </div>
 
-                    <h5 class="fw-bold text-secondary border-bottom pb-2 mb-4 mt-4"><i class="bi bi-person-badge me-2"></i>Анкета клиента</h5>
-
-                    <div class="row g-4 mb-2">
-                        <div class="col-sm-6">
+                    <h6 class="fw-bold text-secondary text-uppercase small mb-4"><i class="bi bi-person-badge me-2"></i>Профиль клиента</h6>
+                    <div class="row g-4 mb-2 px-2">
+                        <div class="col-sm-6 border-bottom pb-2">
                             <p class="text-muted small mb-1">ФИО</p>
-                            <p class="fw-bold fs-6">@Model.LastName @Model.FirstName</p>
+                            <p class="fw-bold fs-6 mb-0">@Model.LastName @Model.FirstName</p>
                         </div>
-                        <div class="col-sm-6">
-                            <p class="text-muted small mb-1">ИНН</p>
-                            <p class="fw-bold fs-6">@Model.Inn</p>
+                        <div class="col-sm-6 border-bottom pb-2">
+                            <p class="text-muted small mb-1">ИНН / Паспорт</p>
+                            <p class="fw-bold fs-6 mb-0">@Model.Inn / @Model.PassportSerial</p>
                         </div>
-                        <div class="col-sm-6">
-                            <p class="text-muted small mb-1">Заявленный доход</p>
-                            <p class="fw-bold fs-6">@Model.IncomeAmount.ToString("N0") сом</p>
+                        <div class="col-sm-6 border-bottom pb-2">
+                            <p class="text-muted small mb-1">Образование</p>
+                            <p class="fw-bold fs-6 mb-0">@Html.DisplayFor(m => m.EducationLevel)</p>
                         </div>
-                        <div class="col-sm-6">
-                            <p class="text-muted small mb-1">Стаж работы</p>
-                            <p class="fw-bold fs-6">@Model.EmploymentYears лет</p>
+                        <div class="col-sm-6 border-bottom pb-2">
+                            <p class="text-muted small mb-1">Семейное положение</p>
+                            <p class="fw-bold fs-6 mb-0">@Html.DisplayFor(m => m.MaritalStatus)</p>
+                        </div>
+                        <div class="col-sm-6 border-bottom pb-2">
+                            <p class="text-muted small mb-1">Сфера деятельности</p>
+                            <p class="fw-bold fs-6 mb-0">@Model.EmployerIndustry</p>
+                        </div>
+                        <div class="col-sm-6 border-bottom pb-2">
+                            <p class="text-muted small mb-1">Общий заявленный доход</p>
+                            <p class="fw-bold fs-6 text-success mb-0">@((Model.IncomeAmount + Model.AdditionalIncome).ToString("N0")) сом</p>
                         </div>
                     </div>
 
                     <div class="text-center mt-5">
-                        <a asp-action="MyApplications" class="btn btn-outline-secondary btn-lg px-5 rounded-pill shadow-sm">
-                            <i class="bi bi-arrow-left me-2"></i>Вернуться к списку
+                        <a asp-action="MyApplications" class="btn btn-outline-dark btn-lg px-5 rounded-pill shadow-sm fw-bold">
+                            <i class="bi bi-arrow-left me-2"></i>Вернуться
                         </a>
                     </div>
-
                 </div>
             </div>
         </div>

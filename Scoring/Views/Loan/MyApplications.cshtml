@@ -1,21 +1,27 @@
 @model IEnumerable<Scoring.Models.LoanApplication>
+@using Scoring.Models
 
 @{
     ViewData["Title"] = "Мои кредиты";
 }
 
 <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold"><i class="bi bi-person-lines-fill text-primary me-2"></i>Мои заявки</h2>
-        <a asp-action="Create" class="btn btn-primary shadow-sm"><i class="bi bi-plus-lg me-1"></i> Оформить новый кредит</a>
+    <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-4 rounded-4 shadow-sm border">
+        <div>
+            <h2 class="fw-bold text-dark mb-0"><i class="bi bi-person-lines-fill text-primary me-2"></i>Мои заявки</h2>
+            <p class="text-muted small mt-1 mb-0">История ваших обращений в банк</p>
+        </div>
+        <a asp-action="Create" class="btn btn-primary btn-lg shadow-sm rounded-pill fw-bold">
+            <i class="bi bi-plus-lg me-1"></i> Оформить кредит
+        </a>
     </div>
 
     @if (!Model.Any())
     {
-        <div class="text-center py-5 bg-light rounded-4 border-dashed">
-            <i class="bi bi-folder2-open display-4 text-muted mb-3 d-block"></i>
-            <h4 class="text-muted">У вас пока нет заявок</h4>
-            <p class="text-muted small">Подайте первую заявку, чтобы узнать свой кредитный лимит.</p>
+        <div class="text-center py-5 bg-white rounded-4 shadow-sm border mt-4">
+            <i class="bi bi-folder2-open display-1 text-muted opacity-50 mb-3 d-block"></i>
+            <h3 class="fw-bold text-dark">У вас пока нет заявок</h3>
+            <p class="text-muted">Подайте первую заявку, чтобы узнать свой кредитный лимит за пару минут.</p>
         </div>
     }
     else
@@ -25,33 +31,37 @@
             {
                 <div class="col-md-6 col-lg-4">
                     <div class="card h-100 shadow-sm border-0 border-top border-4 
-                        @(app.StatusId == 3 ? "border-success" : (app.StatusId == 4 ? "border-danger" : "border-warning"))">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between mb-3">
-                                <span class="text-muted small">№ @app.Id.ToString().Substring(0,8)</span>
-                                <span class="badge @(app.StatusId == 3 ? "bg-success" : (app.StatusId == 4 ? "bg-danger" : "bg-warning text-dark"))">
-                                    @app.Status?.Name
+                        @(app.Status == ApplicationStatus.Approved ? "border-success" : 
+                         (app.Status == ApplicationStatus.Rejected ? "border-danger" : "border-warning")) rounded-4">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between mb-3 align-items-center">
+                                <span class="text-muted small fw-bold">№ @app.Id.ToString().Substring(0,8)</span>
+                                <span class="badge px-3 py-2 rounded-pill @(app.Status == ApplicationStatus.Approved ? "bg-success" : 
+                                                                            (app.Status == ApplicationStatus.Rejected ? "bg-danger" : "bg-warning text-dark"))">
+                                    @Html.DisplayFor(modelItem => app.Status)
                                 </span>
                             </div>
                             <h5 class="card-title fw-bold text-dark mb-1">@app.LoanProduct?.Name</h5>
-                            <h3 class="text-primary mb-3">@app.Amount.ToString("N0") <span class="fs-6 text-muted fw-normal">сом</span></h3>
+                            <h2 class="text-primary fw-bold mb-4">@app.Amount.ToString("N0") <span class="fs-6 text-muted fw-normal">сом</span></h2>
                             
-                            <ul class="list-unstyled text-muted small mb-0">
-                                <li><i class="bi bi-calendar3 me-2"></i>Срок: <strong>@app.TermMonths мес.</strong></li>
-                                <li><i class="bi bi-clock me-2"></i>Подана: <strong>@app.CreatedAt.ToString("dd.MM.yyyy")</strong></li>
-                            </ul>
+                            <div class="p-3 bg-light rounded-3 mb-0">
+                                <ul class="list-unstyled text-muted small mb-0">
+                                    <li class="mb-2"><i class="bi bi-calendar3 text-primary me-2"></i>Срок: <strong class="text-dark">@app.TermMonths мес.</strong></li>
+                                    <li><i class="bi bi-clock text-primary me-2"></i>Подана: <strong class="text-dark">@app.CreatedAt.ToString("dd.MM.yyyy")</strong></li>
+                                </ul>
+                            </div>
                         </div>
-                        <div class="card-footer bg-white border-0 pt-0 pb-3">
-                            @if (app.StatusId == 3)
+                        <div class="card-footer bg-white border-0 pt-0 pb-4 px-4">
+                            @if (app.Status == ApplicationStatus.Approved)
                             {
-                                <a asp-action="DownloadContract" asp-route-id="@app.Id" class="btn btn-outline-success w-100 btn-sm">
-                                    <i class="bi bi-download me-1"></i> Скачать договор
+                                <a asp-action="DownloadContract" asp-route-id="@app.Id" class="btn btn-outline-success w-100 fw-bold rounded-pill">
+                                    <i class="bi bi-file-earmark-pdf-fill me-1"></i> Скачать договор
                                 </a>
                             }
                             else
                             {
-                                <a asp-action="Details" asp-route-id="@app.Id" class="btn btn-light w-100 btn-sm">
-                                    Посмотреть детали
+                                <a asp-action="Details" asp-route-id="@app.Id" class="btn btn-light w-100 fw-bold rounded-pill text-primary border">
+                                    Детали заявки
                                 </a>
                             }
                         </div>
