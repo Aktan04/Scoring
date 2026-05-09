@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Scoring.Models;
 
-[Authorize(Roles = "officer, admin")]
+namespace Scoring.Controllers;
+
+[Authorize(Roles = "checker")] // ИЗМЕНЕНО: Доступ имеет только Чекер (Андеррайтер)
 public class AdminController : Controller
 {
     private readonly ApplicationDbContext _context;
@@ -20,9 +22,9 @@ public class AdminController : Controller
     public async Task<IActionResult> VerificationQueue()
     {
         var queue = await _context.LoanApplications
-            // .Include(a => a.Status) <--- УДАЛЕНО! Это больше не нужно
             .Include(a => a.LoanProduct)
-            .Where(a => a.Status == ApplicationStatus.ManualReview) // ИСПОЛЬЗУЕМ ENUM
+            .Include(a => a.Maker) // ДОБАВЛЕНО: Подтягиваем Мейкера, чтобы Чекер видел, кто оформил анкету
+            .Where(a => a.Status == ApplicationStatus.ManualReview) 
             .OrderBy(a => a.CreatedAt)
             .ToListAsync();
             
@@ -35,9 +37,8 @@ public class AdminController : Controller
         var app = await _context.LoanApplications.FindAsync(id);
         if (app == null) return NotFound();
 
-        var officer = await _userManager.GetUserAsync(User);
+        var checkerUser = await _userManager.GetUserAsync(User);
 
-        // Строгая типизация вместо int
         ApplicationStatus oldStatus = app.Status;
         ApplicationStatus newStatus = isApproved ? ApplicationStatus.Approved : ApplicationStatus.Rejected; 
 
@@ -47,15 +48,15 @@ public class AdminController : Controller
             ApplicationId = app.Id,
             OldStatus = oldStatus,
             NewStatus = newStatus,
-            ChangedById = officer.Id,
+            ChangedById = checkerUser.Id, // Фиксируем ID Чекера в истории
             Comment = comment,
             ChangedAt = DateTime.UtcNow
         };
 
         // 2. Обновляем заявку
         app.Status = newStatus;
-        app.OfficerId = officer.Id;
-        app.UpdatedAt = DateTime.UtcNow; // Фиксируем время изменения
+        app.CheckerId = checkerUser.Id; // ИЗМЕНЕНО: Заменили OfficerId на CheckerId
+        app.UpdatedAt = DateTime.UtcNow;
 
         _context.ApplicationHistories.Add(historyEntry);
         _context.Update(app);
@@ -68,8 +69,9 @@ public class AdminController : Controller
     public async Task<IActionResult> ApplicationDetails(Guid id)
     {
         var application = await _context.LoanApplications
-            // .Include(a => a.Status) <--- УДАЛЕНО!
             .Include(a => a.LoanProduct)
+            .Include(a => a.Maker)   // ДОБАВЛЕНО: Инфа об инициаторе
+            .Include(a => a.Checker) // ДОБАВЛЕНО: Инфа о проверяющем (если уже назначен)
             .FirstOrDefaultAsync(a => a.Id == id);
 
         if (application == null) return NotFound();

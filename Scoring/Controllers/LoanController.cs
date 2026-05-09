@@ -8,6 +8,7 @@ using System.Text.Json;
 
 namespace Scoring.Controllers;
 
+[Authorize] // Защищаем контроллер на базовом уровне
 public class LoanController : Controller
 {
     private readonly ApplicationDbContext _context;
@@ -19,12 +20,13 @@ public class LoanController : Controller
         _userManager = userManager;
     }
     
-    [Authorize(Roles = "admin, officer")]
+    // ПРОСМОТР ВСЕХ ЗАЯВОК: Доступно Мейкеру и Чекеру (Админ не видит)
+    [Authorize(Roles = "maker, checker")]
     public async Task<IActionResult> Index()
     {
         var applications = await _context.LoanApplications
-            // УБРАНО: .Include(a => a.Status) - статус теперь Enum, JOIN не нужен
             .Include(a => a.LoanProduct)
+            .Include(a => a.Maker) // Подтягиваем инфу о том, какой сотрудник создал
             .OrderByDescending(a => a.CreatedAt)
             .ToListAsync();
 
@@ -36,25 +38,20 @@ public class LoanController : Controller
         return View(applications);
     }
 
-    [Authorize(Roles = "user")]
+    // СОЗДАНИЕ ЗАЯВКИ (GET): Доступно ТОЛЬКО Мейкеру
+    [Authorize(Roles = "maker")]
     [HttpGet]
     public async Task<IActionResult> Create()
     {
-        var user = await _userManager.GetUserAsync(User);
-    
         var products = await _context.LoanProducts.Where(p => p.IsActive).ToListAsync();
         ViewBag.Products = new SelectList(products, "Id", "Name");
 
-        var model = new LoanApplication
-        {
-            FirstName = user.FullName.Split(' ').FirstOrDefault() ?? "",
-            LastName = user.FullName.Split(' ').LastOrDefault() ?? ""
-        };
-    
-        return View(model);
+        // Отправляем пустую модель, Мейкер вбивает все данные клиента вручную
+        return View(new LoanApplication());
     }
 
-    [Authorize(Roles = "user")]
+    // СОЗДАНИЕ ЗАЯВКИ (POST): Доступно ТОЛЬКО Мейкеру
+    [Authorize(Roles = "maker")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(LoanApplication application)
@@ -66,10 +63,11 @@ public class LoanController : Controller
 
         if (ModelState.IsValid)
         {
-            var user = await _userManager.GetUserAsync(User);
+            var makerUser = await _userManager.GetUserAsync(User);
         
-            application.UserId = user.Id;
-            application.Status = ApplicationStatus.InScoring; // ИСПОЛЬЗУЕМ ENUM
+            // ПРИВЯЗЫВАЕМ ЗАЯВКУ К СОТРУДНИКУ (Maker)
+            application.MakerId = makerUser.Id;
+            application.Status = ApplicationStatus.InScoring; 
             application.CreatedAt = DateTime.UtcNow;
             application.UpdatedAt = DateTime.UtcNow;
         
@@ -84,7 +82,8 @@ public class LoanController : Controller
         return View(application);
     }
     
-    // Обновленный метод скоринга с учетом новых полей и Enum
+    // АВТОМАТИЧЕСКИЙ СКОРИНГ: Срабатывает сразу после создания Мейкером
+    [Authorize(Roles = "maker")]
     [HttpGet]
     public async Task<IActionResult> ProcessScoring(Guid id)
     {
@@ -93,7 +92,7 @@ public class LoanController : Controller
 
         var rules = await _context.ScoringRules.Where(r => r.IsActive).ToListAsync();
         int totalScore = 0;
-        var details = new Dictionary<string, string>(); // Заменили список на словарь для красивого JSON
+        var details = new Dictionary<string, string>(); 
 
         // 1. ЖЕСТКИЙ АНТИФРОД КОНТРОЛЬ
         var age = DateTime.Today.Year - app.BirthDate.Year;
@@ -114,14 +113,12 @@ public class LoanController : Controller
 
         // 2. МАТЕМАТИКА ПО ENUM-ПРАВИЛАМ
         
-        // Возраст
         var ageRule = rules.FirstOrDefault(r => r.Parameter == ScoringParameter.Age && age >= r.MinValue && age <= r.MaxValue);
         if (ageRule != null) {
             totalScore += ageRule.WeightPoints;
             details.Add("Возраст", $"{age} лет ({ageRule.WeightPoints} б.)");
         }
 
-        // Общий доход (Основной + Дополнительный)
         var totalIncome = app.IncomeAmount + app.AdditionalIncome;
         var incomeRule = rules.FirstOrDefault(r => r.Parameter == ScoringParameter.Income && totalIncome >= r.MinValue && totalIncome <= r.MaxValue);
         if (incomeRule != null) {
@@ -129,14 +126,12 @@ public class LoanController : Controller
             details.Add("Доход", $"{totalIncome} сом ({incomeRule.WeightPoints} б.)");
         }
 
-        // Стаж
         var expRule = rules.FirstOrDefault(r => r.Parameter == ScoringParameter.Experience && app.EmploymentYears >= r.MinValue && app.EmploymentYears <= r.MaxValue);
         if (expRule != null) {
             totalScore += expRule.WeightPoints;
             details.Add("Стаж", $"{app.EmploymentYears} лет ({expRule.WeightPoints} б.)");
         }
 
-        // DTI (Долговая нагрузка)
         decimal monthlyPayment = app.Amount / app.TermMonths;
         decimal dti = totalIncome > 0 ? (monthlyPayment / totalIncome) * 100 : 100;
         var dtiRule = rules.FirstOrDefault(r => r.Parameter == ScoringParameter.DTI && dti >= r.MinValue && dti <= r.MaxValue);
@@ -145,14 +140,12 @@ public class LoanController : Controller
             details.Add("DTI", $"{dti:F1}% ({dtiRule.WeightPoints} б.)");
         }
 
-        // Иждивенцы
         var depRule = rules.FirstOrDefault(r => r.Parameter == ScoringParameter.DependentsCount && app.DependentsCount >= r.MinValue && app.DependentsCount <= r.MaxValue);
         if (depRule != null) {
             totalScore += depRule.WeightPoints;
             details.Add("Иждивенцы", $"{app.DependentsCount} чел. ({depRule.WeightPoints} б.)");
         }
 
-        // Наличие активов (Недвижимость/Авто)
         var realEstateRule = rules.FirstOrDefault(r => r.Parameter == ScoringParameter.HasRealEstate && (app.HasRealEstate ? 1 : 0) >= r.MinValue && (app.HasRealEstate ? 1 : 0) <= r.MaxValue);
         if (realEstateRule != null) {
             totalScore += realEstateRule.WeightPoints;
@@ -171,7 +164,7 @@ public class LoanController : Controller
         else if (totalScore >= 40) decision = ScoringDecision.ManualReview; 
         else decision = ScoringDecision.Rejected;                        
 
-        string jsonLog = JsonSerializer.Serialize(details); // Сохраняем в красивом JSON формате
+        string jsonLog = JsonSerializer.Serialize(details); 
 
         return await FinishScoring(app, totalScore, decision, jsonLog);
     }
@@ -201,18 +194,17 @@ public class LoanController : Controller
         return RedirectToAction("Details", new { id = app.Id });
     }
     
-    [Authorize(Roles = "admin, officer")]
+    // АНАЛИТИКА: Оставляем доступ Админу (для бизнес-отчетов) и Чекеру
+    [Authorize(Roles = "admin, checker, maker")]
     public async Task<IActionResult> Dashboard()
     {
-        // Группировка по Enum
         var statsRaw = await _context.LoanApplications
             .GroupBy(a => a.Status)
             .Select(g => new { StatusEnum = g.Key, Count = g.Count() })
             .ToListAsync();
 
-        // Преобразуем Enum в строку на стороне сервера, чтобы избежать ошибок трансляции SQL
         var stats = statsRaw.Select(s => new { 
-            Status = s.StatusEnum.ToString(), // Можно заменить на GetDisplayName(), если есть хелпер
+            Status = s.StatusEnum.ToString(), 
             Count = s.Count 
         }).ToList();
 
@@ -231,6 +223,8 @@ public class LoanController : Controller
         return View();
     }
     
+    // ДЕТАЛИ ЗАЯВКИ: Мейкер и Чекер (Админ не имеет доступа к перс. данным клиентов)
+    [Authorize(Roles = "maker, checker")]
     public async Task<IActionResult> Details(Guid id)
     {
         var result = await _context.ScoringResults
@@ -251,21 +245,8 @@ public class LoanController : Controller
         return View(result);
     }
     
-    [Authorize(Roles = "user")]
-    public async Task<IActionResult> MyApplications()
-    {
-        var currentUser = await _userManager.GetUserAsync(User);
-    
-        var myApps = await _context.LoanApplications
-            .Include(a => a.LoanProduct)
-            .Where(a => a.UserId == currentUser.Id) 
-            .OrderByDescending(a => a.CreatedAt)
-            .ToListAsync();
-
-        return View(myApps);
-    }
-    
-    [Authorize]
+    // ДОГОВОР: Мейкер распечатывает договор клиенту
+    [Authorize(Roles = "maker, checker")]
     public async Task<IActionResult> DownloadContract(Guid id)
     {
         var result = await _context.ScoringResults
@@ -291,7 +272,8 @@ public class LoanController : Controller
         3. Цель: {result.Application.LoanProduct.Name}. 
         4. Результат скоринга: {result.TotalScore} баллов.
         
-        Документ сформирован автоматически системой скоринга.";
+        Документ сформирован автоматически системой скоринга. 
+        Необходима подпись ответственного сотрудника (Maker).";
 
         var bytes = System.Text.Encoding.UTF8.GetBytes(content);
         return File(bytes, "text/plain", $"Contract_{id.ToString().Substring(0, 8)}.txt"); 

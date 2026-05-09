@@ -16,35 +16,6 @@ public class AccountController : Controller
         }
 
         [HttpGet]
-        public IActionResult Register() => View();
-
-        [HttpPost]
-        public async Task<IActionResult> Register(RegisterViewModel model)
-        {
-            if (ModelState.IsValid)
-            {
-                User user = new User { 
-                    Email = model.Email, 
-                    UserName = model.Email, 
-                    FullName = model.FullName
-                };
-                
-                var result = await _userManager.CreateAsync(user, model.Password);
-                if (result.Succeeded)
-                {
-                    // По умолчанию всем новым регистрирующимся даем роль "user" (клиент)
-                    await _userManager.AddToRoleAsync(user, "user");
-                    await _signInManager.SignInAsync(user, false);
-                    return RedirectToAction("Index", "Home");
-                }
-                
-                foreach (var error in result.Errors)
-                    ModelState.AddModelError(string.Empty, error.Description);
-            }
-            return View(model);
-        }
-
-        [HttpGet]
         public IActionResult Login(string returnUrl = null) => View(new LoginViewModel { ReturnUrl = returnUrl });
 
         [HttpPost]

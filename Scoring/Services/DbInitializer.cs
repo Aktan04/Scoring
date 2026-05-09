@@ -15,8 +15,8 @@ public static class DbInitializer
         UserManager<User> userManager, 
         RoleManager<IdentityRole<int>> roleManager)
     {
-        // 1. Создаем роли, если их нет
-        string[] roles = { "admin", "officer", "user" };
+        // 1. Создаем только внутренние банковские роли (Maker-Checker)
+        string[] roles = { "admin", "maker", "checker" };
         foreach (var role in roles)
         {
             if (!await roleManager.RoleExistsAsync(role))
@@ -25,10 +25,10 @@ public static class DbInitializer
             }
         }
 
-        // 2. Создаем тестовых пользователей (Офицер и Клиенты)
-        var officer = await CreateUserAsync(userManager, "officer1@test.com", "Офицер Смирнов", "officer");
-        var client1 = await CreateUserAsync(userManager, "client1@test.com", "Иван Иванов", "user");
-        var client2 = await CreateUserAsync(userManager, "client2@test.com", "Анна Смирнова", "user");
+        // 2. Создаем тестовых сотрудников банка
+        var admin = await CreateUserAsync(userManager, "admin@bank.com", "Администратор Системы", "admin");
+        var maker = await CreateUserAsync(userManager, "maker@bank.com", "Мейкер (Оформитель) Иванов", "maker");
+        var checker = await CreateUserAsync(userManager, "checker@bank.com", "Чекер (Андеррайтер) Смирнов", "checker");
 
         // 3. Заполнение кредитных продуктов
         if (!await context.LoanProducts.AnyAsync())
@@ -42,7 +42,7 @@ public static class DbInitializer
             await context.SaveChangesAsync();
         }
 
-        // 4. Заполнение правил скоринга (ИСПОЛЬЗУЕМ ENUM)
+        // 4. Заполнение правил скоринга (Матрица)
         if (!await context.ScoringRules.AnyAsync())
         {
             context.ScoringRules.AddRange(
@@ -65,37 +65,37 @@ public static class DbInitializer
             await context.SaveChangesAsync();
         }
 
-        // 5. Генерация тестовых заявок
-        if (!await context.LoanApplications.AnyAsync() && client1 != null && client2 != null)
+        // 5. Генерация тестовых заявок (Создаются Мейкером)
+        if (!await context.LoanApplications.AnyAsync() && maker != null)
         {
             var products = await context.LoanProducts.ToListAsync();
             var random = new Random();
 
             var applications = new List<LoanApplication>
             {
-                // Заявки в очереди на проверку 
-                CreateMockApp(client1, products[0], ApplicationStatus.ManualReview, 150000, 12, "11204199000111"),
-                CreateMockApp(client2, products[1], ApplicationStatus.ManualReview, 800000, 36, "21204199000222"),
-                CreateMockApp(client1, products[3], ApplicationStatus.ManualReview, 2500000, 24, "11204199000111"),
+                // Заявки в очереди на проверку (Чекера еще нет, так как решение не принято)
+                CreateMockApp(maker, products[0], ApplicationStatus.ManualReview, 150000, 12, "11204199000111", "Нурлан", "Асанов"),
+                CreateMockApp(maker, products[1], ApplicationStatus.ManualReview, 800000, 36, "21204199000222", "Айнура", "Садыкова"),
+                CreateMockApp(maker, products[3], ApplicationStatus.ManualReview, 2500000, 24, "11204199000333", "Иван", "Иванов"),
 
-                // Одобренные заявки 
-                CreateMockApp(client1, products[0], ApplicationStatus.Approved, 50000, 6, "11204199000111", officer),
-                CreateMockApp(client2, products[2], ApplicationStatus.Approved, 3500000, 120, "21204199000222", officer),
-                CreateMockApp(client2, products[0], ApplicationStatus.Approved, 120000, 12, "21204199000222", officer),
+                // Одобренные заявки (Проверены Чекером)
+                CreateMockApp(maker, products[0], ApplicationStatus.Approved, 50000, 6, "11204199000444", "Елена", "Смирнова", checker),
+                CreateMockApp(maker, products[2], ApplicationStatus.Approved, 3500000, 120, "21204199000555", "Бакыт", "Керимов", checker),
+                CreateMockApp(maker, products[0], ApplicationStatus.Approved, 120000, 12, "21204199000666", "Азамат", "Токтогулов", checker),
 
-                // Отказанные заявки 
-                CreateMockApp(client1, products[1], ApplicationStatus.Rejected, 1500000, 60, "11204199000111", officer),
-                CreateMockApp(client2, products[3], ApplicationStatus.Rejected, 5000000, 36, "21204199000222", officer),
+                // Отказанные заявки (Отклонены Чекером)
+                CreateMockApp(maker, products[1], ApplicationStatus.Rejected, 1500000, 60, "11204199000777", "Мария", "Ким", checker),
+                CreateMockApp(maker, products[3], ApplicationStatus.Rejected, 5000000, 36, "21204199000888", "Руслан", "Батыров", checker),
 
-                // Заявки "На скоринге" 
-                CreateMockApp(client1, products[0], ApplicationStatus.InScoring, 200000, 18, "11204199000111"),
-                CreateMockApp(client2, products[0], ApplicationStatus.InScoring, 80000, 6, "21204199000222")
+                // Заявки "На скоринге" (Только что созданы Мейкером)
+                CreateMockApp(maker, products[0], ApplicationStatus.InScoring, 200000, 18, "11204199000999", "Гульзат", "Маматова"),
+                CreateMockApp(maker, products[0], ApplicationStatus.InScoring, 80000, 6, "21204199000000", "Дмитрий", "Волков")
             };
 
             context.LoanApplications.AddRange(applications);
             await context.SaveChangesAsync();
 
-            // Создаем фейковые результаты скоринга для обработанных заявок (ИСПОЛЬЗУЕМ ENUM)
+            // Создаем фейковые результаты скоринга для обработанных заявок
             foreach (var app in applications.Where(a => a.Status == ApplicationStatus.Approved || a.Status == ApplicationStatus.Rejected))
             {
                 context.ScoringResults.Add(new ScoringResult
@@ -103,7 +103,7 @@ public static class DbInitializer
                     ApplicationId = app.Id,
                     TotalScore = app.Status == ApplicationStatus.Approved ? random.Next(70, 95) : random.Next(10, 39),
                     Decision = app.Status == ApplicationStatus.Approved ? ScoringDecision.Approved : ScoringDecision.Rejected,
-                    RawResponseJson = "{\"Age\": \"+15\", \"Income\": \"+30\", \"Experience\": \"+10\", \"DTI\": \"+25\"}", // Имитация JSON
+                    RawResponseJson = "{\"Возраст\": \"+15\", \"Доход\": \"+30\", \"Стаж\": \"+10\", \"DTI\": \"+25\"}", 
                     CalculatedAt = app.CreatedAt.AddMinutes(2)
                 });
             }
@@ -111,6 +111,7 @@ public static class DbInitializer
         }
     }
 
+    // Вспомогательный метод создания пользователя (сотрудника)
     private static async Task<User> CreateUserAsync(UserManager<User> userManager, string email, string fullName, string role)
     {
         var user = await userManager.FindByEmailAsync(email);
@@ -126,30 +127,41 @@ public static class DbInitializer
         return user;
     }
 
-    // Обрати внимание на замену int statusId -> ApplicationStatus status
-    private static LoanApplication CreateMockApp(User user, LoanProduct product, ApplicationStatus status, decimal amount, int term, string inn, User? officer = null)
+    // Вспомогательный метод для генерации заявок от имени Мейкера
+    private static LoanApplication CreateMockApp(
+        User maker, 
+        LoanProduct product, 
+        ApplicationStatus status, 
+        decimal amount, 
+        int term, 
+        string inn, 
+        string firstName, 
+        string lastName, 
+        User? checker = null)
     {
         var random = new Random();
-        var parts = user.FullName.Split(' ');
         
         return new LoanApplication
         {
-            UserId = user.Id,
+            // ПРИВЯЗКА К СОТРУДНИКАМ БАНКА
+            MakerId = maker.Id,
+            CheckerId = checker?.Id,
+            
             LoanProductId = product.Id,
-            Status = status, // Enum
-            OfficerId = officer?.Id,
-            FirstName = parts.FirstOrDefault() ?? "Имя",
-            LastName = parts.LastOrDefault() ?? "Фамилия",
+            Status = status,
+            
+            // ДАННЫЕ КЛИЕНТА (Вбиваются вручную)
+            FirstName = firstName,
+            LastName = lastName,
             Inn = inn,
-            PassportSerial = "ID" + random.Next(1000000, 9999999).ToString(), // Генерация паспорта
+            PassportSerial = "ID" + random.Next(1000000, 9999999).ToString(),
             BirthDate = new DateTime(random.Next(1970, 2000), random.Next(1, 12), random.Next(1, 28)).ToUniversalTime(),
             
-            // Новые поля заполняем случайными или дефолтными данными
             MaritalStatus = (MaritalStatus)random.Next(1, 5),
             DependentsCount = random.Next(0, 4),
             EducationLevel = (EducationLevel)random.Next(1, 5),
             EmploymentType = (EmploymentType)random.Next(1, 6),
-            EmployerIndustry = "IT / Финансы",
+            EmployerIndustry = "IT / Торговля",
             
             IncomeAmount = random.Next(40000, 150000),
             AdditionalIncome = random.Next(0, 30000),
@@ -158,11 +170,12 @@ public static class DbInitializer
             HasRealEstate = random.Next(0, 2) == 1,
             HasVehicle = random.Next(0, 2) == 1,
             ActiveLoansCount = random.Next(0, 3),
-            HasPastDelinquencies = random.Next(0, 10) > 8, // Имитируем просрочки примерно в 10% случаев
+            HasPastDelinquencies = random.Next(0, 10) > 8, 
             
             Amount = amount,
             TermMonths = term,
-            CreatedAt = DateTime.UtcNow.AddDays(-random.Next(1, 30)) 
+            CreatedAt = DateTime.UtcNow.AddDays(-random.Next(1, 30)),
+            UpdatedAt = DateTime.UtcNow
         };
     }
 }

@@ -14,13 +14,15 @@ namespace Scoring.Models
         // --- 1. СВЯЗИ С ПОЛЬЗОВАТЕЛЯМИ И ПРОДУКТАМИ ---
         
         [Required]
-        public int UserId { get; set; }
-        [ForeignKey("UserId")]
-        public virtual User User { get; set; }
+        [Display(Name = "Инициатор (Maker)")]
+        public int MakerId { get; set; }
+        [ForeignKey("MakerId")]
+        public virtual User Maker { get; set; } // Тот, кто заполнил анкету со слов клиента
 
-        public int? OfficerId { get; set; }
-        [ForeignKey("OfficerId")]
-        public virtual User Officer { get; set; }
+        [Display(Name = "Проверяющий (Checker)")]
+        public int? CheckerId { get; set; }
+        [ForeignKey("CheckerId")]
+        public virtual User Checker { get; set; } // Тот, кто вынес финальное решение (если был ManualReview)
 
         [Required]
         [Display(Name = "Кредитный продукт")]
