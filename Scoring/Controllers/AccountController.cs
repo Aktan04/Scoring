@@ -16,7 +16,8 @@ public class AccountController : Controller
         }
 
         [HttpGet]
-        public IActionResult Login(string returnUrl = null) => View(new LoginViewModel { ReturnUrl = returnUrl });
+        public IActionResult Login(string returnUrl = null) 
+            => View(new LoginViewModel { ReturnUrl = returnUrl });
 
         [HttpPost]
         [ValidateAntiForgeryToken]

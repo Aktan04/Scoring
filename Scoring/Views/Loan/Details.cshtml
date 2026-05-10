@@ -60,7 +60,7 @@
                     </ul>
 
                     <div class="d-grid gap-3 d-md-flex justify-content-md-center">
-                        <a asp-action="MyApplications" class="btn btn-light btn-lg px-5 rounded-pill shadow-sm fw-bold">Вернуться к списку</a>
+                        <a asp-action="Index" class="btn btn-outline-dark btn-lg px-5 rounded-pill shadow-sm fw-bold">Вернуться в базу заявок</a>                        
                         @if (isApproved)
                         {
                             <a asp-action="DownloadContract" asp-route-id="@app.Id" class="btn btn-success btn-lg px-5 shadow-sm rounded-pill fw-bold">

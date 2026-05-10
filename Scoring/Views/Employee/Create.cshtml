@@ -1,0 +1,58 @@
+@model Scoring.Models.RegisterEmployeeViewModel
+
+@{
+    ViewData["Title"] = "Регистрация сотрудника";
+}
+
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-white p-4 border-bottom">
+                    <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-person-plus text-primary me-2"></i>Добавление нового сотрудника</h5>
+                </div>
+                <div class="card-body p-4 bg-light bg-opacity-50">
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3 fw-bold small"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="FullName" class="form-label fw-bold small text-secondary text-uppercase">ФИО сотрудника</label>
+                            <input asp-for="FullName" class="form-control form-control-lg" placeholder="Например: Иванов Иван Иванович" required />
+                            <span asp-validation-for="FullName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label fw-bold small text-secondary text-uppercase">Рабочий Email (Логин)</label>
+                            <input asp-for="Email" type="email" class="form-control form-control-lg" placeholder="employee@bank.com" required />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Role" class="form-label fw-bold small text-secondary text-uppercase">Должность в системе</label>
+                            <select asp-for="Role" class="form-select form-select-lg border-primary border-opacity-25" asp-items="ViewBag.Roles" required>
+                                <option value="">-- Выберите должность --</option>
+                            </select>
+                            <span asp-validation-for="Role" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Password" class="form-label fw-bold small text-secondary text-uppercase">Временный пароль</label>
+                            <input asp-for="Password" class="form-control form-control-lg" placeholder="Задайте пароль для входа" required />
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                            <div class="form-text small mt-2"><i class="bi bi-info-circle me-1"></i>Сотрудник должен использовать этот пароль для первого входа в систему.</div>
+                        </div>
+
+                        <div class="d-grid gap-3 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold rounded-pill shadow-sm">Зарегистрировать сотрудника</button>
+                            <a asp-action="Index" class="btn btn-light btn-lg rounded-pill shadow-sm">Отмена</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
