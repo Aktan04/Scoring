@@ -106,7 +106,7 @@ public class LoanController : Controller
             return await FinishScoring(app, 0, ScoringDecision.Rejected, "{\"Антифрод\": \"Наличие открытых просрочек в Кредитном Бюро\"}");
         }
 
-        var isBlacklisted = await _context.BlackListEntries.AnyAsync(b => b.Inn == app.Inn);
+        var isBlacklisted = await _context.BlackListEntries.AnyAsync(b => b.Inn == app.Inn && b.IsActive);
         if (isBlacklisted) {
             return await FinishScoring(app, 0, ScoringDecision.Rejected, "{\"Антифрод\": \"Клиент находится в черном списке\"}");
         }

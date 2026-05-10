@@ -1,32 +1,68 @@
-<div class="card shadow border-0">
-    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-        <h5 class="mb-0"><i class="bi bi-shield-slash"></i> Черный список (Antifraud)</h5>
-        <a asp-action="Create" class="btn btn-light btn-sm">Добавить ИНН</a>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-hover mb-0">
-            <thead>
-            <tr>
-                <th>ИНН</th>
-                <th>Причина</th>
-                <th>Дата добавления</th>
-                <th>Действия</th>
-            </tr>
-            </thead>
-            <tbody>
-            @foreach (var item in Model) {
+@model IEnumerable<Scoring.Models.BlackListEntry>
+
+@{
+    ViewData["Title"] = "Антифрод (Черный список)";
+}
+
+<div class="container-fluid mt-4 mb-5">
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center p-4 border-0 rounded-top-4">
+            <h5 class="mb-0 fw-bold"><i class="bi bi-shield-slash me-2 text-danger"></i> База заблокированных ИНН (Antifraud)</h5>
+            <a asp-action="Create" class="btn btn-light btn-sm fw-bold rounded-pill px-3 shadow-sm">Добавить ИНН вручную</a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
                 <tr>
-                    <td><strong>@item.Inn</strong></td>
-                    <td>@item.Reason</td>
-                    <td>@item.CreatedAt.ToShortDateString()</td>
-                    <td>
-                        <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Удалить?')">
-                            <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
-                        </form>
-                    </td>
+                    <th class="ps-4 py-3 text-secondary small text-uppercase">ИНН</th>
+                    <th class="py-3 text-secondary small text-uppercase w-50">Причина / Комментарий</th>
+                    <th class="py-3 text-secondary small text-uppercase">Дата добавления</th>
+                    <th class="py-3 text-secondary small text-uppercase">Статус</th>
+                    <th class="text-end pe-4 py-3 text-secondary small text-uppercase">Действия</th>
                 </tr>
-            }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="5" class="text-center py-5 text-muted">Черный список пуст</td></tr>
+                }
+                @foreach (var item in Model) {
+                    <tr class="@(!item.IsActive ? "opacity-50" : "")">
+                        <td class="ps-4">
+                            <span class="badge bg-light text-dark border fs-6 font-monospace shadow-sm">@item.Inn</span>
+                        </td>
+                        <td class="small text-muted">@item.Reason</td>
+                        <td class="small fw-bold">@item.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                        <td>
+                            @if (item.IsActive)
+                            {
+                                <span class="badge bg-danger px-3 py-2 rounded-pill"><i class="bi bi-lock-fill me-1"></i> Заблокирован</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success px-3 py-2 rounded-pill"><i class="bi bi-unlock-fill me-1"></i> Исключен из ЧС</span>
+                            }
+                        </td>
+                        <td class="text-end pe-4">
+                            <form asp-action="ToggleStatus" asp-route-id="@item.Id" method="post">
+                                @if (item.IsActive)
+                                {
+                                    <button class="btn btn-outline-secondary btn-sm rounded-pill shadow-sm" title="Исключить из Черного списка">
+                                        <i class="bi bi-arrow-counterclockwise me-1"></i> Восстановить
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-outline-danger btn-sm rounded-pill shadow-sm" title="Снова добавить в Черный список">
+                                        <i class="bi bi-shield-lock me-1"></i> Заблокировать
+                                    </button>
+                                }
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>

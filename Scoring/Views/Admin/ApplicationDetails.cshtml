@@ -19,13 +19,17 @@
         <div class="col-lg-7">
             <div class="card shadow-sm border-0 rounded-4 mb-4">
                 <div class="card-header bg-white p-4 border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-person-vcard text-primary me-2"></i>Анкета клиента</h5>
+                    <div>
+                        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-person-vcard text-primary me-2"></i>Анкета клиента</h5>
+                        <p class="small text-muted mb-0 mt-1">Оформил: <strong>@(Model.Maker?.FullName ?? "Неизвестно")</strong></p>
+                    </div>
                     <span class="badge px-3 py-2 rounded-pill @(Model.Status == ApplicationStatus.Approved ? "bg-success" :
                                                                   (Model.Status == ApplicationStatus.Rejected ? "bg-danger" : "bg-warning text-dark"))">
                         @Html.DisplayFor(m => Model.Status)
                     </span>
                 </div>
                 <div class="card-body p-4 bg-light bg-opacity-50">
+
                     <h6 class="fw-bold text-secondary text-uppercase small mb-3">Параметры кредита</h6>
                     <div class="row mb-4 bg-white p-3 rounded-3 border shadow-sm mx-0">
                         <div class="col-sm-4 border-end">
@@ -116,6 +120,13 @@
                                 <textarea name="comment" id="comment" class="form-control border-warning border-opacity-50 shadow-sm" rows="3" placeholder="Укажите причину одобрения или отказа..." required></textarea>
                             </div>
 
+                            <div class="form-check mb-4 bg-danger bg-opacity-10 p-3 rounded-3 border border-danger border-opacity-25">
+                                <input class="form-check-input ms-1 border-danger shadow-sm" type="checkbox" id="addToBlacklist" name="addToBlacklist" value="true">
+                                <label class="form-check-label fw-bold text-danger small ms-2" for="addToBlacklist">
+                                    <i class="bi bi-shield-slash-fill me-1"></i> Отказать и внести ИНН в Черный список
+                                </label>
+                            </div>
+
                             <div class="d-flex gap-2">
                                 <button type="submit" name="isApproved" value="false" class="btn btn-danger w-100 fw-bold shadow-sm rounded-pill">
                                     <i class="bi bi-x-circle me-1"></i> Отказать
@@ -162,7 +173,7 @@
                                     </div>
 
                                     <div class="text-muted small">
-                                        <i class="bi bi-person-circle me-1"></i> Исполнитель: <strong>@item.ChangedBy?.FullName</strong>
+                                        <i class="bi bi-person-circle me-1"></i> Сотрудник: <strong>@item.ChangedBy?.FullName</strong>
                                     </div>
                                 </div>
                             }

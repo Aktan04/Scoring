@@ -9,7 +9,7 @@ public class AdminInitializer
         string adminPassword = "admin"; // Для ВКР простая политика паролей — это ок
         
         // Роли согласно специфике кредитного отдела
-        var roles = new [] { "admin", "officer", "user" }; 
+        var roles = new [] { "admin", "maker", "checker" }; 
         
         foreach (var role in roles)
         {
