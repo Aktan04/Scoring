@@ -4,29 +4,14 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
-
 namespace Scoring.Migrations
 {
     /// <inheritdoc />
-    public partial class Initialize : Migration
+    public partial class RefactoredModels : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateTable(
-                name: "application_statuses",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_application_statuses", x => x.Id);
-                });
-
             migrationBuilder.CreateTable(
                 name: "AspNetRoles",
                 columns: table => new
@@ -49,6 +34,7 @@ namespace Scoring.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     FullName = table.Column<string>(type: "text", nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
@@ -77,7 +63,8 @@ namespace Scoring.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Inn = table.Column<string>(type: "text", nullable: false),
                     Reason = table.Column<string>(type: "text", nullable: false),
-                    AddedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -107,9 +94,9 @@ namespace Scoring.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    ParameterName = table.Column<string>(type: "text", nullable: false),
-                    MinValue = table.Column<decimal>(type: "numeric", nullable: true),
-                    MaxValue = table.Column<decimal>(type: "numeric", nullable: true),
+                    Parameter = table.Column<int>(type: "integer", nullable: false),
+                    MinValue = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
+                    MaxValue = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
                     WeightPoints = table.Column<int>(type: "integer", nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false)
                 },
@@ -229,40 +216,44 @@ namespace Scoring.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<int>(type: "integer", nullable: false),
-                    StatusId = table.Column<int>(type: "integer", nullable: false),
+                    MakerId = table.Column<int>(type: "integer", nullable: false),
+                    CheckerId = table.Column<int>(type: "integer", nullable: true),
                     LoanProductId = table.Column<int>(type: "integer", nullable: false),
-                    Amount = table.Column<decimal>(type: "numeric", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    Amount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     TermMonths = table.Column<int>(type: "integer", nullable: false),
-                    FirstName = table.Column<string>(type: "text", nullable: false),
-                    LastName = table.Column<string>(type: "text", nullable: false),
+                    FirstName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    LastName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Inn = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: false),
-                    PassportSerial = table.Column<string>(type: "text", nullable: false),
+                    PassportSerial = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     BirthDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    IncomeAmount = table.Column<decimal>(type: "numeric", nullable: false),
+                    MaritalStatus = table.Column<int>(type: "integer", nullable: false),
+                    DependentsCount = table.Column<int>(type: "integer", nullable: false),
+                    EducationLevel = table.Column<int>(type: "integer", nullable: false),
+                    EmploymentType = table.Column<int>(type: "integer", nullable: false),
+                    EmployerIndustry = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     EmploymentYears = table.Column<int>(type: "integer", nullable: false),
-                    FamilyStatus = table.Column<string>(type: "text", nullable: false),
-                    OfficerId = table.Column<int>(type: "integer", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    IncomeAmount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    AdditionalIncome = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    HasRealEstate = table.Column<bool>(type: "boolean", nullable: false),
+                    HasVehicle = table.Column<bool>(type: "boolean", nullable: false),
+                    ActiveLoansCount = table.Column<int>(type: "integer", nullable: false),
+                    HasPastDelinquencies = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_loan_applications", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_loan_applications_AspNetUsers_OfficerId",
-                        column: x => x.OfficerId,
+                        name: "FK_loan_applications_AspNetUsers_CheckerId",
+                        column: x => x.CheckerId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_loan_applications_AspNetUsers_UserId",
-                        column: x => x.UserId,
+                        name: "FK_loan_applications_AspNetUsers_MakerId",
+                        column: x => x.MakerId,
                         principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_loan_applications_application_statuses_StatusId",
-                        column: x => x.StatusId,
-                        principalTable: "application_statuses",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -280,8 +271,8 @@ namespace Scoring.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     ApplicationId = table.Column<Guid>(type: "uuid", nullable: false),
-                    OldStatusId = table.Column<int>(type: "integer", nullable: false),
-                    NewStatusId = table.Column<int>(type: "integer", nullable: false),
+                    OldStatus = table.Column<int>(type: "integer", nullable: false),
+                    NewStatus = table.Column<int>(type: "integer", nullable: false),
                     ChangedById = table.Column<int>(type: "integer", nullable: false),
                     Comment = table.Column<string>(type: "text", nullable: false),
                     ChangedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
@@ -311,7 +302,7 @@ namespace Scoring.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     ApplicationId = table.Column<Guid>(type: "uuid", nullable: false),
                     TotalScore = table.Column<int>(type: "integer", nullable: false),
-                    Decision = table.Column<string>(type: "text", nullable: false),
+                    Decision = table.Column<int>(type: "integer", nullable: false),
                     AntiFraudScore = table.Column<int>(type: "integer", nullable: false),
                     RawResponseJson = table.Column<string>(type: "jsonb", nullable: false),
                     CalculatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
@@ -325,18 +316,6 @@ namespace Scoring.Migrations
                         principalTable: "loan_applications",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.InsertData(
-                table: "application_statuses",
-                columns: new[] { "Id", "Name" },
-                values: new object[,]
-                {
-                    { 1, "Черновик" },
-                    { 2, "На скоринге" },
-                    { 3, "Одобрено" },
-                    { 4, "Отказ" },
-                    { 5, "Ручная проверка" }
                 });
 
             migrationBuilder.CreateIndex(
@@ -387,24 +366,19 @@ namespace Scoring.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_loan_applications_CheckerId",
+                table: "loan_applications",
+                column: "CheckerId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_loan_applications_LoanProductId",
                 table: "loan_applications",
                 column: "LoanProductId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_loan_applications_OfficerId",
+                name: "IX_loan_applications_MakerId",
                 table: "loan_applications",
-                column: "OfficerId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_loan_applications_StatusId",
-                table: "loan_applications",
-                column: "StatusId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_loan_applications_UserId",
-                table: "loan_applications",
-                column: "UserId");
+                column: "MakerId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_scoring_results_ApplicationId",
@@ -450,9 +424,6 @@ namespace Scoring.Migrations
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");
-
-            migrationBuilder.DropTable(
-                name: "application_statuses");
 
             migrationBuilder.DropTable(
                 name: "loan_products");

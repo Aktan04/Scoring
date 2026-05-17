@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace Scoring.Models;
 
@@ -25,7 +26,8 @@ public class LoanProduct
 
     [Display(Name = "Активен")]
     public bool IsActive { get; set; } = true;
-
+    
+    [ValidateNever]
     // Навигационное свойство (один продукт = много заявок)
     public virtual ICollection<LoanApplication> Applications { get; set; }
 }

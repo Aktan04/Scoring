@@ -99,4 +99,25 @@ public class EmployeeController : Controller
         };
         return View(model);
     }
+    
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleStatus(int id)
+    {
+        var userToToggle = await _userManager.FindByIdAsync(id.ToString());
+        if (userToToggle != null)
+        {
+            // Защита: Админ не должен случайно заблокировать сам себя
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (userToToggle.Id == currentUser.Id)
+            {
+                TempData["ErrorMessage"] = "Нельзя заблокировать собственную учетную запись!";
+                return RedirectToAction(nameof(Index));
+            }
+
+            userToToggle.IsActive = !userToToggle.IsActive; // Переключаем статус
+            await _userManager.UpdateAsync(userToToggle);
+        }
+        return RedirectToAction(nameof(Index));
+    }
 }

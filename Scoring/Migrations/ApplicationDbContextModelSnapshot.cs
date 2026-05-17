@@ -22,86 +22,6 @@ namespace Scoring.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("CreditScoringSystem.Models.ApplicationStatus", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("application_statuses");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Name = "Черновик"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Name = "На скоринге"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Name = "Одобрено"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Name = "Отказ"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Name = "Ручная проверка"
-                        });
-                });
-
-            modelBuilder.Entity("CreditScoringSystem.Models.ScoringResult", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AntiFraudScore")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("ApplicationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CalculatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Decision")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("RawResponseJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<int>("TotalScore")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ApplicationId");
-
-                    b.ToTable("scoring_results");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<int>", b =>
                 {
                     b.Property<int>("Id")
@@ -255,10 +175,10 @@ namespace Scoring.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("NewStatusId")
+                    b.Property<int>("NewStatus")
                         .HasColumnType("integer");
 
-                    b.Property<int>("OldStatusId")
+                    b.Property<int>("OldStatus")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
@@ -278,12 +198,15 @@ namespace Scoring.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("AddedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Inn")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Reason")
                         .IsRequired()
@@ -300,28 +223,60 @@ namespace Scoring.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int>("ActiveLoansCount")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("AdditionalIncome")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
                     b.Property<decimal>("Amount")
-                        .HasColumnType("numeric");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<DateTime>("BirthDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int?>("CheckerId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DependentsCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("EducationLevel")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("EmployerIndustry")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("EmploymentType")
+                        .HasColumnType("integer");
 
                     b.Property<int>("EmploymentYears")
                         .HasColumnType("integer");
 
-                    b.Property<string>("FamilyStatus")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("FirstName")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("HasPastDelinquencies")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("HasRealEstate")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("HasVehicle")
+                        .HasColumnType("boolean");
 
                     b.Property<decimal>("IncomeAmount")
-                        .HasColumnType("numeric");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<string>("Inn")
                         .IsRequired()
@@ -330,36 +285,39 @@ namespace Scoring.Migrations
 
                     b.Property<string>("LastName")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<int>("LoanProductId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("OfficerId")
+                    b.Property<int>("MakerId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MaritalStatus")
                         .HasColumnType("integer");
 
                     b.Property<string>("PassportSerial")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
-                    b.Property<int>("StatusId")
+                    b.Property<int>("Status")
                         .HasColumnType("integer");
 
                     b.Property<int>("TermMonths")
                         .HasColumnType("integer");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CheckerId");
+
                     b.HasIndex("LoanProductId");
 
-                    b.HasIndex("OfficerId");
-
-                    b.HasIndex("StatusId");
-
-                    b.HasIndex("UserId");
+                    b.HasIndex("MakerId");
 
                     b.ToTable("loan_applications");
                 });
@@ -394,6 +352,40 @@ namespace Scoring.Migrations
                     b.ToTable("loan_products");
                 });
 
+            modelBuilder.Entity("Scoring.Models.ScoringResult", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AntiFraudScore")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CalculatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Decision")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RawResponseJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<int>("TotalScore")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId");
+
+                    b.ToTable("scoring_results");
+                });
+
             modelBuilder.Entity("Scoring.Models.ScoringRule", b =>
                 {
                     b.Property<int>("Id")
@@ -406,14 +398,15 @@ namespace Scoring.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<decimal?>("MaxValue")
-                        .HasColumnType("numeric");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<decimal?>("MinValue")
-                        .HasColumnType("numeric");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
-                    b.Property<string>("ParameterName")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("Parameter")
+                        .HasColumnType("integer");
 
                     b.Property<int>("WeightPoints")
                         .HasColumnType("integer");
@@ -448,6 +441,9 @@ namespace Scoring.Migrations
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
@@ -492,17 +488,6 @@ namespace Scoring.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("AspNetUsers", (string)null);
-                });
-
-            modelBuilder.Entity("CreditScoringSystem.Models.ScoringResult", b =>
-                {
-                    b.HasOne("Scoring.Models.LoanApplication", "Application")
-                        .WithMany()
-                        .HasForeignKey("ApplicationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Application");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
@@ -577,40 +562,38 @@ namespace Scoring.Migrations
 
             modelBuilder.Entity("Scoring.Models.LoanApplication", b =>
                 {
+                    b.HasOne("Scoring.Models.User", "Checker")
+                        .WithMany()
+                        .HasForeignKey("CheckerId");
+
                     b.HasOne("Scoring.Models.LoanProduct", "LoanProduct")
                         .WithMany("Applications")
                         .HasForeignKey("LoanProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Scoring.Models.User", "Officer")
+                    b.HasOne("Scoring.Models.User", "Maker")
                         .WithMany()
-                        .HasForeignKey("OfficerId");
-
-                    b.HasOne("CreditScoringSystem.Models.ApplicationStatus", "Status")
-                        .WithMany("Applications")
-                        .HasForeignKey("StatusId")
+                        .HasForeignKey("MakerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Scoring.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("Checker");
 
                     b.Navigation("LoanProduct");
 
-                    b.Navigation("Officer");
-
-                    b.Navigation("Status");
-
-                    b.Navigation("User");
+                    b.Navigation("Maker");
                 });
 
-            modelBuilder.Entity("CreditScoringSystem.Models.ApplicationStatus", b =>
+            modelBuilder.Entity("Scoring.Models.ScoringResult", b =>
                 {
-                    b.Navigation("Applications");
+                    b.HasOne("Scoring.Models.LoanApplication", "Application")
+                        .WithMany()
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Application");
                 });
 
             modelBuilder.Entity("Scoring.Models.LoanProduct", b =>

@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.EntityFrameworkCore;
 
 namespace Scoring.Models
@@ -17,16 +18,19 @@ namespace Scoring.Models
         [Display(Name = "Инициатор (Maker)")]
         public int MakerId { get; set; }
         [ForeignKey("MakerId")]
+        [ValidateNever]
         public virtual User Maker { get; set; } // Тот, кто заполнил анкету со слов клиента
 
         [Display(Name = "Проверяющий (Checker)")]
         public int? CheckerId { get; set; }
         [ForeignKey("CheckerId")]
+        [ValidateNever]
         public virtual User Checker { get; set; } // Тот, кто вынес финальное решение (если был ManualReview)
 
         [Required]
         [Display(Name = "Кредитный продукт")]
         public int LoanProductId { get; set; }
+        [ValidateNever]
         public virtual LoanProduct LoanProduct { get; set; }
 
         // --- 2. ПАРАМЕТРЫ КРЕДИТА ---

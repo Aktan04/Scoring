@@ -1,0 +1,82 @@
+@model Scoring.Models.BlackListEntry
+
+@{
+    ViewData["Title"] = "Добавление в черный список";
+}
+
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+
+            <!-- Кнопка назад -->
+            <div class="mb-3">
+                <a asp-action="Index" class="btn btn-link text-secondary text-decoration-none p-0">
+                    <i class="bi bi-arrow-left me-1"></i> Вернуться к списку
+                </a>
+            </div>
+
+            <!-- Карточка формы -->
+            <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-dark text-white p-4 border-0">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-danger text-white rounded-3 p-2 me-3 shadow-sm">
+                            <i class="bi bi-shield-slash-fill fs-4 d-flex"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-0 fw-bold">Внесение в ЧС</h4>
+                            <p class="mb-0 text-white-50 small">Антифрод-система кредитного портала</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    <form asp-action="Create" method="post" autocomplete="off">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3 text-center small fw-bold"></div>
+
+                        <!-- Поле ИНН -->
+                        <div class="mb-4">
+                            <label asp-for="Inn" class="form-label fw-bold text-secondary">ИНН Клиента</label>
+                            <div class="input-group input-group-lg shadow-sm">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-card-text text-muted"></i></span>
+                                <input asp-for="Inn" class="form-control border-start-0 ps-0 font-monospace"
+                                       placeholder="Введите 14-значный ИНН" required maxlength="14" pattern="\d*" />
+                            </div>
+                            <span asp-validation-for="Inn" class="text-danger small mt-1 d-block"></span>
+                            <div class="form-text small text-muted">Вводите только цифры. ИНН будет мгновенно проверяться при создании заявок.</div>
+                        </div>
+
+                        <!-- Поле Причина -->
+                        <div class="mb-4">
+                            <label asp-for="Reason" class="form-label fw-bold text-secondary">Причина блокировки / Комментарий</label>
+                            <div class="input-group shadow-sm">
+                                <span class="input-group-text bg-light border-end-0 align-items-start pt-3"><i class="bi bi-chat-left-text text-muted"></i></span>
+                                <textarea asp-for="Reason" class="form-control border-start-0 ps-0 pt-2"
+                                          rows="4" placeholder="Укажите детальную причину (например: Мошенничество, Подделка документов, Черный список ЦБ...)" required></textarea>
+                            </div>
+                            <span asp-validation-for="Reason" class="text-danger small mt-1 d-block"></span>
+                        </div>
+
+                        <hr class="text-muted my-4 opacity-25">
+
+                        <!-- Кнопки управления -->
+                        <div class="row g-3">
+                            <div class="col-sm-6 order-2 order-sm-1">
+                                <a asp-action="Index" class="btn btn-outline-secondary btn-lg w-100 fw-bold rounded-3">Отмена</a>
+                            </div>
+                            <div class="col-sm-6 order-1 order-sm-2">
+                                <button type="submit" class="btn btn-danger btn-lg w-100 fw-bold shadow-sm rounded-3">
+                                    <i class="bi bi-plus-circle me-1"></i> Заблокировать
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
