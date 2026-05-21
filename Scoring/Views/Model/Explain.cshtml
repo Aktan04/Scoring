@@ -1,0 +1,353 @@
+@using Scoring.Models
+@{
+    ViewData["Title"] = "Методология модели";
+
+    var iv = ViewBag.FeatureIV as Dictionary<string, double> ?? new Dictionary<string, double>();
+    var activeModel = ViewBag.ActiveModel as ModelCoefficients;
+
+    // Баллы — из модели если есть, иначе дефолтные
+    int pAge21  = activeModel?.PtsAge21_25 ?? -6;
+    int pAge26  = activeModel?.PtsAge26_35 ?? 10;
+    int pAge36  = activeModel?.PtsAge36_45 ?? 17;
+    int pAge46  = activeModel?.PtsAge46_55 ?? 20;
+    int pAge56  = activeModel?.PtsAge56_65 ?? -5;
+
+    int pInc1   = activeModel?.PtsIncomeLt30K   ?? -9;
+    int pInc2   = activeModel?.PtsIncome30_60K  ?? 19;
+    int pInc3   = activeModel?.PtsIncome60_100K ?? 14;
+    int pInc4   = activeModel?.PtsIncomeGt100K  ?? 15;
+
+    int pExp0   = activeModel?.PtsExp0   ?? -17;
+    int pExp1   = activeModel?.PtsExp1_3 ??   2;
+    int pExp2   = activeModel?.PtsExp3_7 ??   4;
+    int pExp3   = activeModel?.PtsExpGt7 ??  12;
+
+    int pDti1   = activeModel?.PtsDtiLt30  ??  42;
+    int pDti2   = activeModel?.PtsDti30_45 ??  24;
+    int pDti3   = activeModel?.PtsDti45_60 ??  16;
+    int pDti4   = activeModel?.PtsDtiGt60  ?? -13;
+
+    int pDep0   = activeModel?.PtsDep0   ?? 14;
+    int pDep1   = activeModel?.PtsDep1   ??  6;
+    int pDep2   = activeModel?.PtsDep2   ?? 11;
+    int pDep3   = activeModel?.PtsDepGt3 ??  1;
+
+    int pReY    = activeModel?.PtsRealEstateYes ?? 16;
+    int pReN    = activeModel?.PtsRealEstateNo  ??  1;
+    int pVehY   = activeModel?.PtsVehicleYes    ?? 10;
+    int pVehN   = activeModel?.PtsVehicleNo     ??  6;
+
+    int approve = activeModel?.ThresholdApprove ?? 580;
+    int review  = activeModel?.ThresholdReview  ?? 540;
+}
+
+<div class="container py-4">
+
+    <h2 class="mb-1">Методология скоринговой модели</h2>
+    <p class="text-muted mb-4">WOE-скоркарта на основе логистической регрессии — отраслевой стандарт кредитного скоринга (Basel II / IFRS 9).</p>
+
+    @* Статус модели *@
+    @if (activeModel != null)
+    {
+        <div class="alert alert-success py-2 mb-4">
+            Активна модель <strong>#@activeModel.Id</strong> —
+            обучена @activeModel.TrainedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm"),
+            AUC = <strong>@activeModel.TrainAuc.ToString("F3")</strong>,
+            Gini = <strong>@activeModel.Gini.ToString("F3")</strong>,
+            выборка: @activeModel.TrainSamples записей.
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning py-2 mb-4">
+            Модель ещё не обучена. Показаны базовые коэффициенты.
+            <a asp-controller="Training" asp-action="Index">Перейти к обучению</a>
+        </div>
+    }
+
+    @* Шкала решений *@
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header fw-bold">Шкала принятия решений</div>
+        <div class="card-body">
+            <div class="row text-center g-3">
+                <div class="col-md-4">
+                    <div class="p-3 rounded" style="background:#d1f7e0">
+                        <div class="fs-3 fw-bold text-success">@approve и выше</div>
+                        <div class="fw-semibold">Автоматическое одобрение</div>
+                        <small class="text-muted">Низкий риск дефолта</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 rounded" style="background:#fff3cd">
+                        <div class="fs-3 fw-bold text-warning">@review – @(approve - 1)</div>
+                        <div class="fw-semibold">Ручная проверка</div>
+                        <small class="text-muted">Средний риск, нужен андеррайтер</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 rounded" style="background:#fde8e8">
+                        <div class="fs-3 fw-bold text-danger">Ниже @review</div>
+                        <div class="fw-semibold">Автоматический отказ</div>
+                        <small class="text-muted">Высокий риск дефолта</small>
+                    </div>
+                </div>
+            </div>
+            <p class="mt-3 mb-0 small text-muted">
+                Базовая точка: 600 баллов = соотношение хороших к плохим 50:1.
+                PDO = 20: каждые 20 баллов вдвое улучшают шансы.
+            </p>
+        </div>
+    </div>
+
+    @* IV таблица *@
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header fw-bold">Предиктивная сила признаков (Information Value)</div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Признак</th>
+                        <th class="text-end">IV</th>
+                        <th>Сила</th>
+                        <th style="min-width:140px">Вклад</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var f in iv.OrderByDescending(x => x.Value))
+                    {
+                        string badge;
+                        string label;
+                        string bar;
+
+                        if (f.Value > 0.3)
+                        {
+                            badge = "bg-success";
+                            label = "Сильный";
+                            bar   = "bg-success";
+                        }
+                        else if (f.Value > 0.1)
+                        {
+                            badge = "bg-warning text-dark";
+                            label = "Средний";
+                            bar   = "bg-warning";
+                        }
+                        else
+                        {
+                            badge = "bg-secondary";
+                            label = "Слабый";
+                            bar   = "bg-secondary";
+                        }
+
+                        int w = (int)(f.Value / 0.6 * 100);
+                        if (w > 100) w = 100;
+
+                        <tr>
+                            <td class="align-middle">@f.Key</td>
+                            <td class="text-end align-middle fw-bold">@f.Value.ToString("F4")</td>
+                            <td class="align-middle"><span class="badge @badge">@label</span></td>
+                            <td class="align-middle">
+                                <div class="progress" style="height:10px">
+                                    <div class="progress-bar @bar" style="width:@(w)%"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer small text-muted">
+            IV больше 0.3 — сильный предиктор | 0.1–0.3 — средний | меньше 0.1 — слабый
+        </div>
+    </div>
+
+    @* Таблица баллов *@
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header fw-bold">Таблица баллов скоркарты (WOE-бины)</div>
+        <div class="card-body">
+            <div class="row g-3">
+
+                <div class="col-md-6">
+                    <h6>Возраст</h6>
+                    <table class="table table-sm table-bordered">
+                        <tr>
+                            <td>21–25 лет</td>
+                            <td class="text-end fw-bold @(pAge21 < 0 ? "text-danger" : "text-success")">@pAge21 б.</td>
+                        </tr>
+                        <tr>
+                            <td>26–35 лет</td>
+                            <td class="text-end">@pAge26 б.</td>
+                        </tr>
+                        <tr>
+                            <td>36–45 лет</td>
+                            <td class="text-end text-success">@pAge36 б.</td>
+                        </tr>
+                        <tr>
+                            <td>46–55 лет</td>
+                            <td class="text-end fw-bold text-success">@pAge46 б.</td>
+                        </tr>
+                        <tr>
+                            <td>56–65 лет</td>
+                            <td class="text-end fw-bold @(pAge56 < 0 ? "text-danger" : "text-success")">@pAge56 б.</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="col-md-6">
+                    <h6>Ежемесячный доход</h6>
+                    <table class="table table-sm table-bordered">
+                        <tr>
+                            <td>Меньше 30 000 сом</td>
+                            <td class="text-end fw-bold @(pInc1 < 0 ? "text-danger" : "text-success")">@pInc1 б.</td>
+                        </tr>
+                        <tr>
+                            <td>30 000 – 60 000 сом</td>
+                            <td class="text-end text-success">@pInc2 б.</td>
+                        </tr>
+                        <tr>
+                            <td>60 000 – 100 000 сом</td>
+                            <td class="text-end">@pInc3 б.</td>
+                        </tr>
+                        <tr>
+                            <td>Больше 100 000 сом</td>
+                            <td class="text-end">@pInc4 б.</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="col-md-6">
+                    <h6>DTI (долговая нагрузка) — главный предиктор</h6>
+                    <table class="table table-sm table-bordered">
+                        <tr class="table-success">
+                            <td>Меньше 30%</td>
+                            <td class="text-end fw-bold text-success">@pDti1 б.</td>
+                        </tr>
+                        <tr>
+                            <td>30 – 45%</td>
+                            <td class="text-end">@pDti2 б.</td>
+                        </tr>
+                        <tr>
+                            <td>45 – 60%</td>
+                            <td class="text-end">@pDti3 б.</td>
+                        </tr>
+                        <tr class="table-danger">
+                            <td>Больше 60%</td>
+                            <td class="text-end fw-bold text-danger">@pDti4 б.</td>
+                        </tr>
+                    </table>
+                    <small class="text-muted">DTI рассчитывается по аннуитетной формуле с учётом процентной ставки продукта.</small>
+                </div>
+
+                <div class="col-md-6">
+                    <h6>Стаж работы</h6>
+                    <table class="table table-sm table-bordered">
+                        <tr>
+                            <td>Меньше 1 года</td>
+                            <td class="text-end fw-bold @(pExp0 < 0 ? "text-danger" : "text-success")">@pExp0 б.</td>
+                        </tr>
+                        <tr>
+                            <td>1 – 3 года</td>
+                            <td class="text-end">@pExp1 б.</td>
+                        </tr>
+                        <tr>
+                            <td>3 – 7 лет</td>
+                            <td class="text-end">@pExp2 б.</td>
+                        </tr>
+                        <tr>
+                            <td>Больше 7 лет</td>
+                            <td class="text-end text-success">@pExp3 б.</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="col-md-6">
+                    <h6>Иждивенцы</h6>
+                    <table class="table table-sm table-bordered">
+                        <tr>
+                            <td>Нет</td>
+                            <td class="text-end fw-bold text-success">@pDep0 б.</td>
+                        </tr>
+                        <tr>
+                            <td>1 человек</td>
+                            <td class="text-end">@pDep1 б.</td>
+                        </tr>
+                        <tr>
+                            <td>2 человека</td>
+                            <td class="text-end">@pDep2 б.</td>
+                        </tr>
+                        <tr>
+                            <td>3 и более</td>
+                            <td class="text-end">@pDep3 б.</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="col-md-6">
+                    <h6>Активы</h6>
+                    <table class="table table-sm table-bordered">
+                        <tr>
+                            <td>Недвижимость: есть</td>
+                            <td class="text-end fw-bold text-success">@pReY б.</td>
+                        </tr>
+                        <tr>
+                            <td>Недвижимость: нет</td>
+                            <td class="text-end">@pReN б.</td>
+                        </tr>
+                        <tr>
+                            <td>Автомобиль: есть</td>
+                            <td class="text-end">@pVehY б.</td>
+                        </tr>
+                        <tr>
+                            <td>Автомобиль: нет</td>
+                            <td class="text-end">@pVehN б.</td>
+                        </tr>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    @* Математика *@
+    <div class="card shadow-sm">
+        <div class="card-header fw-bold">Математическая основа</div>
+        <div class="card-body">
+
+            <p><strong>1. Weight of Evidence (WOE)</strong> для каждого бина признака:</p>
+            <pre class="bg-light p-3 rounded"><code>WOE_i = ln( Distribution_Good_i / Distribution_Bad_i )</code></pre>
+
+            <p><strong>2. Information Value (IV)</strong> — мера предиктивной силы:</p>
+            <pre class="bg-light p-3 rounded"><code>IV = сумма по всем бинам: (Distribution_Good_i - Distribution_Bad_i) * WOE_i</code></pre>
+
+            <p><strong>3. Логистическая регрессия</strong> обучена на WOE-признаках:</p>
+            <pre class="bg-light p-3 rounded"><code>ln(p / (1-p)) = b0 + b1*WOE_age + b2*WOE_income + b3*WOE_exp + b4*WOE_dti + b5*WOE_dep + b6*WOE_re + b7*WOE_veh</code></pre>
+
+            <p><strong>4. Перевод коэффициентов в баллы (стандарт Basel II):</strong></p>
+            <pre class="bg-light p-3 rounded"><code>Factor = PDO / ln(2) = 20 / 0.693 = 28.85
+Offset = 600 - Factor * ln(50) = 487
+
+Points_i = -(b0/n + bi * WOE_i) * Factor
+Score    = Offset + сумма всех Points_i</code></pre>
+
+            @if (activeModel != null)
+            {
+                <div class="alert alert-info mb-0 small mt-3">
+                    <strong>Параметры активной модели #@activeModel.Id:</strong>
+                    Factor = @activeModel.Factor.ToString("F2"),
+                    Offset = @activeModel.ScaleOffset.ToString("F0"),
+                    порог одобрения = @activeModel.ThresholdApprove,
+                    порог ручной проверки = @activeModel.ThresholdReview
+                </div>
+            }
+            else
+            {
+                <p class="mb-0 text-muted small mt-3">
+                    Модель обучена на синтетическом датасете из 1000 наблюдений по статистике
+                    розничного кредитного рынка Кыргызстана. Целевая переменная — дефолт
+                    в течение 12 месяцев (DR = 13.6%).
+                </p>
+            }
+
+        </div>
+    </div>
+
+</div>

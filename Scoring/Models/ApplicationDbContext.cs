@@ -15,5 +15,7 @@ public class ApplicationDbContext : IdentityDbContext<User, IdentityRole<int>, i
     public DbSet<LoanProduct> LoanProducts { get; set; }
     public DbSet<BlackListEntry> BlackListEntries { get; set; }
     public DbSet<ApplicationHistory> ApplicationHistories { get; set; }
+    public DbSet<TrainingRecord>    TrainingRecords    { get; set; }
+    public DbSet<ModelCoefficients> ModelCoefficients  { get; set; }
     
 }

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Scoring.Data;
 using Scoring.Models;
+using Scoring.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +19,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql
         options.Password.RequireDigit = false; 
     })
     .AddEntityFrameworkStores<ApplicationDbContext>();
-
+builder.Services.AddScoped<ScoringService>();
+builder.Services.AddScoped<ModelTrainer>();
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Account/Login";

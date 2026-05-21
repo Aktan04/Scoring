@@ -15,8 +15,21 @@
                 </div>
                 <div class="card-body p-4 p-md-5 bg-light bg-opacity-50">
                     <form asp-action="Create" method="post">
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
+                        <!-- КРАСИВЫЙ ОБЩИЙ БЛОК ОШИБОК СВЕРХУ -->
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            <div class="alert alert-danger border-0 shadow-sm rounded-3 p-3 mb-4 d-flex align-items-center">
+                                <i class="bi bi-exclamation-triangle-fill fs-4 text-danger me-3"></i>
+                                <div>
+                                    <h6 class="fw-bold mb-1">Форма заполнена некорректно!</h6>
+                                    <div asp-validation-summary="ModelOnly" class="small fw-bold"></div>
+                                    <span class="small text-muted">Пожалуйста, проверьте подсвеченные поля ниже и исправьте ошибки.</span>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- КАРТОЧКА 1: Параметры кредита -->
                         <div class="card border-0 shadow-sm mb-4 rounded-4">
                             <div class="card-body p-4">
                                 <h5 class="fw-bold text-primary mb-4"><i class="bi bi-cash-coin me-2"></i>Параметры кредита</h5>
@@ -26,24 +39,25 @@
                                     <select asp-for="LoanProductId" class="form-select form-select-lg" asp-items="ViewBag.Products" required>
                                         <option value="">-- Выберите продукт --</option>
                                     </select>
-                                    <span asp-validation-for="LoanProductId" class="text-danger small"></span>
+                                    <span asp-validation-for="LoanProductId" class="text-danger small fw-bold mt-1 d-block"></span>
                                 </div>
 
                                 <div class="row g-4">
                                     <div class="col-md-6">
                                         <label asp-for="Amount" class="form-label fw-bold text-secondary small text-uppercase">Желаемая сумма (сом)</label>
                                         <input asp-for="Amount" type="number" class="form-control form-control-lg bg-light" placeholder="Например: 150000" required />
-                                        <span asp-validation-for="Amount" class="text-danger small"></span>
+                                        <span asp-validation-for="Amount" class="text-danger small fw-bold mt-1 d-block"></span>
                                     </div>
                                     <div class="col-md-6">
                                         <label asp-for="TermMonths" class="form-label fw-bold text-secondary small text-uppercase">Срок кредита (мес.)</label>
                                         <input asp-for="TermMonths" type="number" class="form-control form-control-lg bg-light" placeholder="От 3 до 240" required />
-                                        <span asp-validation-for="TermMonths" class="text-danger small"></span>
+                                        <span asp-validation-for="TermMonths" class="text-danger small fw-bold mt-1 d-block"></span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- КАРТОЧКА 2: Личные данные -->
                         <div class="card border-0 shadow-sm mb-4 rounded-4">
                             <div class="card-body p-4">
                                 <h5 class="fw-bold text-primary mb-4"><i class="bi bi-person-vcard me-2"></i>Личные данные</h5>
@@ -51,26 +65,30 @@
                                 <div class="row g-4">
                                     <div class="col-md-6">
                                         <label asp-for="FirstName" class="form-label fw-bold">Имя</label>
-                                        <input asp-for="FirstName" class="form-control"  />
+                                        <input asp-for="FirstName" class="form-control" required />
+                                        <span asp-validation-for="FirstName" class="text-danger small fw-bold mt-1 d-block"></span>
                                     </div>
                                     <div class="col-md-6">
                                         <label asp-for="LastName" class="form-label fw-bold">Фамилия</label>
-                                        <input asp-for="LastName" class="form-control"  />
+                                        <input asp-for="LastName" class="form-control" required />
+                                        <span asp-validation-for="LastName" class="text-danger small fw-bold mt-1 d-block"></span>
                                     </div>
                                     <div class="col-md-4">
                                         <label asp-for="Inn" class="form-label fw-bold">ИНН</label>
-                                        <input asp-for="Inn" class="form-control" placeholder="14 символов" required />
-                                        <span asp-validation-for="Inn" class="text-danger small"></span>
+                                        <input asp-for="Inn" class="form-control font-monospace" placeholder="14 символов" required maxlength="14" />
+                                        <span asp-validation-for="Inn" class="text-danger small fw-bold mt-1 d-block"></span>
                                     </div>
                                     <div class="col-md-4">
                                         <label asp-for="PassportSerial" class="form-label fw-bold">Серия/Номер паспорта</label>
                                         <input asp-for="PassportSerial" class="form-control" placeholder="ID1234567" required />
-                                        <span asp-validation-for="PassportSerial" class="text-danger small"></span>
+                                        <span asp-validation-for="PassportSerial" class="text-danger small fw-bold mt-1 d-block"></span>
                                     </div>
                                     <div class="col-md-4">
                                         <label asp-for="BirthDate" class="form-label fw-bold">Дата рождения</label>
-                                        <input asp-for="BirthDate" type="date" class="form-control" required />
-                                        <span asp-validation-for="BirthDate" class="text-danger small"></span>
+                                        <!-- Принудительно форматируем дату для корректного отображения браузером при ошибках -->
+                                        <input asp-for="BirthDate" type="date" class="form-control"
+                                               value="@(Model?.BirthDate != DateTime.MinValue ? Model.BirthDate.ToString("yyyy-MM-dd") : "")" required />
+                                        <span asp-validation-for="BirthDate" class="text-danger small fw-bold mt-1 d-block"></span>
                                     </div>
 
                                     <div class="col-md-4">
@@ -78,21 +96,25 @@
                                         <select asp-for="MaritalStatus" class="form-select" asp-items="Html.GetEnumSelectList<MaritalStatus>()" required>
                                             <option value="">-- Выберите --</option>
                                         </select>
+                                        <span asp-validation-for="MaritalStatus" class="text-danger small fw-bold mt-1 d-block"></span>
                                     </div>
                                     <div class="col-md-4">
                                         <label asp-for="EducationLevel" class="form-label fw-bold">Образование</label>
                                         <select asp-for="EducationLevel" class="form-select" asp-items="Html.GetEnumSelectList<EducationLevel>()" required>
                                             <option value="">-- Выберите --</option>
                                         </select>
+                                        <span asp-validation-for="EducationLevel" class="text-danger small fw-bold mt-1 d-block"></span>
                                     </div>
                                     <div class="col-md-4">
                                         <label asp-for="DependentsCount" class="form-label fw-bold">Количество иждивенцев</label>
-                                        <input asp-for="DependentsCount" type="number" class="form-control" placeholder="Дети до 18 лет" required />
+                                        <input asp-for="DependentsCount" type="number" class="form-control" placeholder="Дети до 18 лет" required min="0" />
+                                        <span asp-validation-for="DependentsCount" class="text-danger small fw-bold mt-1 d-block"></span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- КАРТОЧКА 3: Трудоустройство и финансы -->
                         <div class="card border-0 shadow-sm mb-4 rounded-4">
                             <div class="card-body p-4">
                                 <h5 class="fw-bold text-primary mb-4"><i class="bi bi-briefcase me-2"></i>Трудоустройство и финансы</h5>
@@ -103,29 +125,34 @@
                                         <select asp-for="EmploymentType" class="form-select" asp-items="Html.GetEnumSelectList<EmploymentType>()" required>
                                             <option value="">-- Выберите --</option>
                                         </select>
+                                        <span asp-validation-for="EmploymentType" class="text-danger small fw-bold mt-1 d-block"></span>
                                     </div>
                                     <div class="col-md-6">
                                         <label asp-for="EmployerIndustry" class="form-label fw-bold">Отрасль компании</label>
                                         <input asp-for="EmployerIndustry" class="form-control" placeholder="IT, Торговля, Госсектор и т.д." required />
+                                        <span asp-validation-for="EmployerIndustry" class="text-danger small fw-bold mt-1 d-block"></span>
                                     </div>
 
                                     <div class="col-md-4">
                                         <label asp-for="IncomeAmount" class="form-label fw-bold text-success">Основной доход (сом)</label>
                                         <input asp-for="IncomeAmount" type="number" class="form-control fw-bold" required />
-                                        <span asp-validation-for="IncomeAmount" class="text-danger small"></span>
+                                        <span asp-validation-for="IncomeAmount" class="text-danger small fw-bold mt-1 d-block"></span>
                                     </div>
                                     <div class="col-md-4">
                                         <label asp-for="AdditionalIncome" class="form-label fw-bold">Доп. доход (сом)</label>
-                                        <input asp-for="AdditionalIncome" type="number" class="form-control" value="0" required />
+                                        <input asp-for="AdditionalIncome" type="number" class="form-control" required />
+                                        <span asp-validation-for="AdditionalIncome" class="text-danger small fw-bold mt-1 d-block"></span>
                                     </div>
                                     <div class="col-md-4">
                                         <label asp-for="EmploymentYears" class="form-label fw-bold">Общий стаж (лет)</label>
-                                        <input asp-for="EmploymentYears" type="number" class="form-control" required />
+                                        <input asp-for="EmploymentYears" type="number" class="form-control" required min="0" />
+                                        <span asp-validation-for="EmploymentYears" class="text-danger small fw-bold mt-1 d-block"></span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- КАРТОЧКА 4: Активы и история -->
                         <div class="card border-0 shadow-sm mb-4 rounded-4">
                             <div class="card-body p-4">
                                 <h5 class="fw-bold text-primary mb-4"><i class="bi bi-house-check me-2"></i>Активы и Кредитная история</h5>
@@ -146,19 +173,21 @@
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label asp-for="ActiveLoansCount" class="form-label fw-bold">Количество текущих кредитов в других банках</label>
-                                            <input asp-for="ActiveLoansCount" type="number" class="form-control" value="0" required />
+                                            <input asp-for="ActiveLoansCount" type="number" class="form-control" required min="0" />
+                                            <span asp-validation-for="ActiveLoansCount" class="text-danger small fw-bold mt-1 d-block"></span>
                                         </div>
                                         <div class="form-check form-switch fs-5 text-danger">
                                             <input class="form-check-input bg-danger border-danger" type="checkbox" asp-for="HasPastDelinquencies">
-                                            <label class="form-check-label fs-6 fw-bold" asp-for="HasPastDelinquencies">У меня были просрочки более 30 дней</label>
+                                            <label class="form-check-label fs-6 fw-bold" asp-for="HasPastDelinquencies">Имелись просрочки более 30 дней</label>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- КНОПКИ -->
                         <div class="d-grid gap-3 d-md-flex justify-content-md-end mt-5">
-                            <a asp-action="Index" class="btn btn-light btn-lg px-5 shadow-sm rounded-pill">Отмена</a>                            
+                            <a asp-action="Index" class="btn btn-light btn-lg px-5 shadow-sm rounded-pill">Отмена</a>
                             <button type="submit" class="btn btn-primary btn-lg px-5 fw-bold shadow-sm rounded-pill">Отправить на скоринг <i class="bi bi-arrow-right ms-2"></i></button>
                         </div>
                     </form>
@@ -170,4 +199,20 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <!-- Добавляем скрипт автоматической интеграции классов Bootstrap при ошибках -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Ищем все спаны ошибок, которые сгенерировал .NET
+            document.querySelectorAll('.field-validation-error').forEach(function (span) {
+                // Находим связанный инпут/селект по атрибуту name
+                var inputName = span.getAttribute('data-valmsg-for');
+                var inputEl = document.querySelector('[name="' + inputName + '"]');
+                if (inputEl) {
+                    // Подсвечиваем инпут красной рамкой Bootstrap
+                    inputEl.classList.add('is-invalid');
+                }
+            });
+        });
+    </script>
 }

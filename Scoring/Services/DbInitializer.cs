@@ -109,6 +109,41 @@ public static class DbInitializer
             }
             await context.SaveChangesAsync();
         }
+        
+        // 6. Загрузка синтетического датасета (1000 записей) для обучения модели
+        if (!await context.TrainingRecords.AnyAsync())
+        {
+            // Читаем JSON с синтетическими данными
+            var jsonPath = Path.Combine(AppContext.BaseDirectory, "Data", "training_seed.json");
+    
+            if (File.Exists(jsonPath))
+            {
+                var json = await File.ReadAllTextAsync(jsonPath);
+                var records = System.Text.Json.JsonSerializer.Deserialize<List<TrainingRecordSeed>>(json,
+                    new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+ 
+                if (records != null)
+                {
+                    var dbRecords = records.Select(r => new TrainingRecord
+                    {
+                        Age            = r.Age,
+                        Income         = r.Income,
+                        ExpYears       = r.ExpYears,
+                        Dti            = (decimal)r.Dti,
+                        Dependents     = r.Dependents,
+                        HasRealEstate  = r.HasRealEstate,
+                        HasVehicle     = r.HasVehicle,
+                        HadDelinquency = r.HadDelinquency,
+                        IsDefault      = r.IsDefault,
+                        SourceApplicationId = null   // синтетические
+                    }).ToList();
+ 
+                    context.TrainingRecords.AddRange(dbRecords);
+                    await context.SaveChangesAsync();
+            
+                }
+            }
+        }
     }
 
     // Вспомогательный метод создания пользователя (сотрудника)
@@ -177,5 +212,18 @@ public static class DbInitializer
             CreatedAt = DateTime.UtcNow.AddDays(-random.Next(1, 30)),
             UpdatedAt = DateTime.UtcNow
         };
+    }
+    
+    private class TrainingRecordSeed
+    {
+        public int     Age           { get; set; }
+        public decimal Income        { get; set; }
+        public int     ExpYears      { get; set; }
+        public double  Dti           { get; set; }
+        public int     Dependents    { get; set; }
+        public bool    HasRealEstate { get; set; }
+        public bool    HasVehicle    { get; set; }
+        public bool    HadDelinquency{ get; set; }
+        public bool    IsDefault     { get; set; }
     }
 }
