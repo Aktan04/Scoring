@@ -13,6 +13,7 @@
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
       <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.10" />
+      <PackageReference Include="QuestPDF" Version="2025.12.3" />
     </ItemGroup>
 
     <ItemGroup>

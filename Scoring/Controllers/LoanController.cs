@@ -15,9 +15,12 @@ public class LoanController : Controller
     private readonly ApplicationDbContext _context;
     private readonly UserManager<User> _userManager;
     private readonly ScoringService _scoreService;
+    private readonly ContractPdfService _pdf;
 
-    public LoanController(ApplicationDbContext context, UserManager<User> userManager, ScoringService scoreService)
+
+    public LoanController(ApplicationDbContext context, UserManager<User> userManager, ScoringService scoreService, ContractPdfService pdf)
     {
+        _pdf = pdf;
         _context = context;
         _userManager = userManager;
         _scoreService = scoreService;
@@ -149,31 +152,79 @@ public class LoanController : Controller
         return RedirectToAction("Details", new { id = app.Id });
     }
     
-    // АНАЛИТИКА: Оставляем доступ Админу (для бизнес-отчетов) и Чекеру
     [Authorize(Roles = "admin, checker, maker")]
     public async Task<IActionResult> Dashboard()
     {
-        var statsRaw = await _context.LoanApplications
-            .GroupBy(a => a.Status)
-            .Select(g => new { StatusEnum = g.Key, Count = g.Count() })
-            .ToListAsync();
-
-        var stats = statsRaw.Select(s => new { 
-            Status = s.StatusEnum.ToString(), 
-            Count = s.Count 
-        }).ToList();
-
-        var types = await _context.LoanApplications
+        var all = await _context.LoanApplications
             .Include(a => a.LoanProduct)
-            .GroupBy(a => a.LoanProduct.Name)
-            .Select(g => new { Type = g.Key, Count = g.Count() })
             .ToListAsync();
 
-        ViewBag.StatusLabels = stats.Select(s => s.Status).ToArray();
-        ViewBag.StatusData = stats.Select(s => s.Count).ToArray();
-    
-        ViewBag.TypeLabels = types.Select(t => t.Type).ToArray();
-        ViewBag.TypeData = types.Select(t => t.Count).ToArray();
+        var scores = await _context.ScoringResults.ToListAsync();
+
+        // Статусы
+        var statuses = all.GroupBy(a => a.Status)
+            .Select(g => new { Status = g.Key.ToString(), Count = g.Count() })
+            .ToList();
+
+        // Продукты
+        var types = all
+            .GroupBy(a => a.LoanProduct?.Name ?? "Без продукта")
+            .Select(g => new { Type = g.Key, Count = g.Count() })
+            .OrderByDescending(g => g.Count)
+            .ToList();
+
+        // Скоринговые баллы по бакетам (только реальные заявки со скорингом)
+        var realScores = scores.Where(s => s.TotalScore > 0).Select(s => s.TotalScore).ToList();
+        var scoreBuckets = new[]
+        {
+            new { Label = "450-499", Count = realScores.Count(s => s >= 450 && s < 500) },
+            new { Label = "500-539", Count = realScores.Count(s => s >= 500 && s < 540) },
+            new { Label = "540-559", Count = realScores.Count(s => s >= 540 && s < 560) },
+            new { Label = "560-579", Count = realScores.Count(s => s >= 560 && s < 580) },
+            new { Label = "580-599", Count = realScores.Count(s => s >= 580 && s < 600) },
+            new { Label = "600+",    Count = realScores.Count(s => s >= 600) },
+        };
+
+        // Динамика по дням (последние 14 дней)
+        var since = DateTime.UtcNow.AddDays(-13).Date;
+        var byDay = all
+            .Where(a => a.CreatedAt.Date >= since)
+            .GroupBy(a => a.CreatedAt.Date)
+            .Select(g => new { Date = g.Key.ToString("dd.MM"), Count = g.Count() })
+            .OrderBy(g => g.Date)
+            .ToList();
+
+        // Заполняем пропущенные дни нулями
+        var days    = Enumerable.Range(0, 14).Select(i => DateTime.UtcNow.AddDays(-13 + i).Date).ToList();
+        var dayMap  = byDay.ToDictionary(d => d.Date, d => d.Count);
+        var dayLabels = days.Select(d => d.ToString("dd.MM")).ToList();
+        var dayData   = days.Select(d => dayMap.GetValueOrDefault(d.ToString("dd.MM"), 0)).ToList();
+
+        // KPI
+        int total      = all.Count;
+        int approved   = all.Count(a => a.Status == ApplicationStatus.Approved);
+        int rejected   = all.Count(a => a.Status == ApplicationStatus.Rejected);
+        int manual     = all.Count(a => a.Status == ApplicationStatus.ManualReview);
+        double approvalRate = total > 0 ? (double)approved / total * 100 : 0;
+        double avgScore     = realScores.Count > 0 ? realScores.Average() : 0;
+        decimal totalAmount = all.Where(a => a.Status == ApplicationStatus.Approved).Sum(a => a.Amount);
+
+        ViewBag.Total        = total;
+        ViewBag.Approved     = approved;
+        ViewBag.Rejected     = rejected;
+        ViewBag.Manual       = manual;
+        ViewBag.ApprovalRate = approvalRate.ToString("F1");
+        ViewBag.AvgScore     = avgScore.ToString("F0");
+        ViewBag.TotalAmount  = totalAmount;
+
+        ViewBag.StatusLabels = statuses.Select(s => s.Status).ToArray();
+        ViewBag.StatusData   = statuses.Select(s => s.Count).ToArray();
+        ViewBag.TypeLabels   = types.Select(t => t.Type).ToArray();
+        ViewBag.TypeData     = types.Select(t => t.Count).ToArray();
+        ViewBag.ScoreLabels  = scoreBuckets.Select(b => b.Label).ToArray();
+        ViewBag.ScoreData    = scoreBuckets.Select(b => b.Count).ToArray();
+        ViewBag.DayLabels    = dayLabels.ToArray();
+        ViewBag.DayData      = dayData.ToArray();
 
         return View();
     }
@@ -209,37 +260,23 @@ public class LoanController : Controller
         return View("UniversalDetails");
     }
     
-    // ДОГОВОР: Мейкер распечатывает договор клиенту
     [Authorize(Roles = "maker, checker")]
     public async Task<IActionResult> DownloadContract(Guid id)
     {
-        var result = await _context.ScoringResults
+        var scoring = await _context.ScoringResults
             .Include(r => r.Application)
-                .ThenInclude(a => a.LoanProduct) 
+            .ThenInclude(a => a.LoanProduct)
             .FirstOrDefaultAsync(r => r.ApplicationId == id);
-
-        if (result == null || result.Decision != ScoringDecision.Approved)
-        {
+ 
+        if (scoring == null || scoring.Decision != ScoringDecision.Approved)
             return BadRequest("Договор доступен только для одобренных заявок.");
-        }
-
-        var content = $@"
-        ИНДИВИДУАЛЬНЫЕ УСЛОВИЯ КРЕДИТНОГО ДОГОВОРА № {result.ApplicationId.ToString().Substring(0, 8)}
-        ------------------------------------------------------------
-        Дата: {DateTime.Now.ToShortDateString()}
-        Кредитор: ОАО 'Кыргызский Технический Банк'
-        Заемщик: {result.Application.LastName} {result.Application.FirstName}
-        ИНН Заемщика: {result.Application.Inn}
-        
-        1. Сумма кредита: {result.Application.Amount:N0} сом.
-        2. Срок кредита: {result.Application.TermMonths} месяцев.
-        3. Цель: {result.Application.LoanProduct.Name}. 
-        4. Результат скоринга: {result.TotalScore} баллов.
-        
-        Документ сформирован автоматически системой скоринга. 
-        Необходима подпись ответственного сотрудника (Maker).";
-
-        var bytes = System.Text.Encoding.UTF8.GetBytes(content);
-        return File(bytes, "text/plain", $"Contract_{id.ToString().Substring(0, 8)}.txt"); 
+ 
+        var bytes = _pdf.Generate(scoring.Application, scoring);
+ 
+        return File(
+            bytes,
+            "application/pdf",
+            $"Contract_{id.ToString().Substring(0, 8).ToUpper()}.pdf"
+        );
     }
 }

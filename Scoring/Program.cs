@@ -21,6 +21,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddScoped<ScoringService>();
 builder.Services.AddScoped<ModelTrainer>();
+builder.Services.AddScoped<ContractPdfService>();
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Account/Login";
