@@ -2,65 +2,350 @@
     ViewData["Title"] = "Аналитика";
 }
 
-<div class="container mt-4">
-    <h2 class="fw-bold text-dark mb-4"><i class="bi bi-pie-chart text-primary me-2"></i>Аналитика скоринга</h2>
+<div class="container-fluid px-4 mt-4 mb-5">
 
-    <div class="row g-4 mb-4">
-        <div class="col-md-6">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white py-3">
-                    <h6 class="mb-0 fw-bold text-secondary">Статусы заявок (Воронка)</h6>
+    @* ── Заголовок ── *@
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <div class="bg-primary bg-opacity-10 rounded-3 p-3">
+            <i class="bi bi-bar-chart-line-fill text-primary fs-4"></i>
+        </div>
+        <div>
+            <h2 class="fw-bold mb-0">Аналитика скоринга</h2>
+            <p class="text-muted small mb-0">Сводная статистика по всем заявкам</p>
+        </div>
+    </div>
+
+    @* ── KPI карточки ── *@
+    <div class="row g-3 mb-4">
+
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="bg-primary bg-opacity-10 rounded-3 p-2">
+                            <i class="bi bi-inbox-fill text-primary fs-5"></i>
+                        </div>
+                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill small">Всего</span>
+                    </div>
+                    <div class="fs-2 fw-bold text-dark">@ViewBag.Total</div>
+                    <div class="text-muted small mt-1">Заявок в системе</div>
                 </div>
-                <div class="card-body">
-                    <canvas id="statusChart"></canvas>
-                </div>
+                <div class="bg-primary" style="height:3px"></div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white py-3">
-                    <h6 class="mb-0 fw-bold text-secondary">Популярность продуктов</h6>
+
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="bg-success bg-opacity-10 rounded-3 p-2">
+                            <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                        </div>
+                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill small">
+                            @ViewBag.ApprovalRate%
+                        </span>
+                    </div>
+                    <div class="fs-2 fw-bold text-dark">@ViewBag.Approved</div>
+                    <div class="text-muted small mt-1">Одобрено</div>
+                    <div class="progress mt-2" style="height:4px">
+                        <div class="progress-bar bg-success" style="width:@ViewBag.ApprovalRate%"></div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <canvas id="typeChart"></canvas>
+                <div class="bg-success" style="height:3px"></div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="bg-danger bg-opacity-10 rounded-3 p-2">
+                            <i class="bi bi-x-circle-fill text-danger fs-5"></i>
+                        </div>
+                        <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill small">Отказы</span>
+                    </div>
+                    <div class="fs-2 fw-bold text-dark">@ViewBag.Rejected</div>
+                    <div class="text-muted small mt-1">Отклонено</div>
+                </div>
+                <div class="bg-danger" style="height:3px"></div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="bg-warning bg-opacity-10 rounded-3 p-2">
+                            <i class="bi bi-lightning-charge-fill text-warning fs-5"></i>
+                        </div>
+                        <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill small">Балл</span>
+                    </div>
+                    <div class="fs-2 fw-bold text-dark">@ViewBag.AvgScore</div>
+                    <div class="text-muted small mt-1">Средний скоринговый балл</div>
+                </div>
+                <div class="bg-warning" style="height:3px"></div>
+            </div>
+        </div>
+
+    </div>
+
+    @* ── Сумма одобренных ── *@
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-primary text-white overflow-hidden">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <i class="bi bi-cash-stack fs-1 opacity-50"></i>
+                </div>
+                <div class="col">
+                    <div class="text-white-50 small text-uppercase fw-bold">Общий объём одобренных кредитов</div>
+                    <div class="fs-3 fw-bold">@((ViewBag.TotalAmount as decimal? ?? 0).ToString("N0")) сом</div>
+                </div>
+                <div class="col-auto d-none d-md-block">
+                    <div class="text-white-50 small">На проверке</div>
+                    <div class="fs-4 fw-bold">@ViewBag.Manual</div>
                 </div>
             </div>
         </div>
     </div>
+
+    @* ── Графики верхний ряд ── *@
+    <div class="row g-4 mb-4">
+
+        @* Динамика заявок *@
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 px-4 pt-4 pb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="fw-bold mb-0">Динамика заявок</h6>
+                            <p class="text-muted small mb-0">Последние 14 дней</p>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 rounded-3 p-2">
+                            <i class="bi bi-graph-up text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <canvas id="dayChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+
+        @* Статусы *@
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 px-4 pt-4 pb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="fw-bold mb-0">Статусы заявок</h6>
+                            <p class="text-muted small mb-0">Распределение</p>
+                        </div>
+                        <div class="bg-info bg-opacity-10 rounded-3 p-2">
+                            <i class="bi bi-pie-chart-fill text-info"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <canvas id="statusChart" height="220"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    @* ── Графики нижний ряд ── *@
+    <div class="row g-4">
+
+        @* Распределение баллов *@
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 px-4 pt-4 pb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="fw-bold mb-0">Распределение скоринговых баллов</h6>
+                            <p class="text-muted small mb-0">
+                                Менее 540 — отказ &nbsp;·&nbsp;
+                                540–579 — проверка &nbsp;·&nbsp;
+                                580+ — одобрение
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <canvas id="scoreChart" height="160"></canvas>
+                </div>
+            </div>
+        </div>
+
+        @* Продукты *@
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 px-4 pt-4 pb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="fw-bold mb-0">Популярность продуктов</h6>
+                            <p class="text-muted small mb-0">Количество заявок по продукту</p>
+                        </div>
+                        <div class="bg-success bg-opacity-10 rounded-3 p-2">
+                            <i class="bi bi-bar-chart-fill text-success"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <canvas id="typeChart" height="160"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
 </div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // График статусов
-        const ctxStatus = document.getElementById('statusChart').getContext('2d');
-        new Chart(ctxStatus, {
-            type: 'doughnut',
+        Chart.defaults.font.family = "'Segoe UI', Arial, sans-serif";
+        Chart.defaults.font.size   = 12;
+
+        const navy  = '#1a3a5c';
+        const teal  = '#0d6efd';
+        const green = '#198754';
+        const red   = '#dc3545';
+        const amber = '#ffc107';
+        const gray  = '#6c757d';
+
+        // ── Динамика заявок (line) ─────────────────────────────────────────────
+        new Chart(document.getElementById('dayChart'), {
+            type: 'line',
             data: {
-                labels: @Html.Raw(Json.Serialize(ViewBag.StatusLabels)),
+                labels: @Html.Raw(Json.Serialize(ViewBag.DayLabels)),
                 datasets: [{
-                    data: @Html.Raw(Json.Serialize(ViewBag.StatusData)),
-                    backgroundColor: ['#ffc107', '#198754', '#dc3545', '#0dcaf0', '#6c757d'],
-                    borderWidth: 0
+                    label: 'Заявок',
+                    data: @Html.Raw(Json.Serialize(ViewBag.DayData)),
+                    borderColor: teal,
+                    backgroundColor: 'rgba(13,110,253,0.08)',
+                    borderWidth: 2,
+                    pointBackgroundColor: teal,
+                    pointRadius: 4,
+                    tension: 0.4,
+                    fill: true
                 }]
             },
-            options: { cutout: '70%', plugins: { legend: { position: 'bottom' } } }
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 },
+                        grid: { color: 'rgba(0,0,0,0.04)' }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
         });
 
-        // График продуктов
-        const ctxType = document.getElementById('typeChart').getContext('2d');
-        new Chart(ctxType, {
+        // ── Статусы (doughnut) ────────────────────────────────────────────────
+        const statusColors = {
+            'Approved':     green,
+            'Rejected':     red,
+            'ManualReview': amber,
+            'InScoring':    '#0dcaf0',
+            'Draft':        gray
+        };
+        const statusLabelsRaw = @Html.Raw(Json.Serialize(ViewBag.StatusLabels));
+        const statusColors2   = statusLabelsRaw.map(l => statusColors[l] || gray);
+
+        new Chart(document.getElementById('statusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: statusLabelsRaw,
+                datasets: [{
+                    data: @Html.Raw(Json.Serialize(ViewBag.StatusData)),
+                    backgroundColor: statusColors2,
+                    borderWidth: 0,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                cutout: '72%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 16, usePointStyle: true, pointStyleWidth: 10 }
+                    }
+                }
+            }
+        });
+
+        // ── Распределение баллов (bar с цветами по зонам) ────────────────────
+        const scoreLabels = @Html.Raw(Json.Serialize(ViewBag.ScoreLabels));
+        const scoreColors = ['#dc3545','#dc3545','#ffc107','#ffc107','#198754','#198754'];
+
+        new Chart(document.getElementById('scoreChart'), {
+            type: 'bar',
+            data: {
+                labels: scoreLabels,
+                datasets: [{
+                    label: 'Заявок',
+                    data: @Html.Raw(Json.Serialize(ViewBag.ScoreData)),
+                    backgroundColor: scoreColors,
+                    borderRadius: 6,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: ctx => {
+                                const score = parseInt(ctx.label);
+                                if (score < 540) return 'Зона отказа';
+                                if (score < 580) return 'Зона проверки';
+                                return 'Зона одобрения';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 },
+                        grid: { color: 'rgba(0,0,0,0.04)' }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // ── Продукты (horizontal bar) ─────────────────────────────────────────
+        new Chart(document.getElementById('typeChart'), {
             type: 'bar',
             data: {
                 labels: @Html.Raw(Json.Serialize(ViewBag.TypeLabels)),
                 datasets: [{
-                    label: 'Количество заявок',
+                    label: 'Заявок',
                     data: @Html.Raw(Json.Serialize(ViewBag.TypeData)),
-                    backgroundColor: '#0d6efd',
-                    borderRadius: 5
+                    backgroundColor: [teal, green, amber, '#6f42c1'],
+                    borderRadius: 6,
+                    borderSkipped: false
                 }]
             },
-            options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 },
+                        grid: { color: 'rgba(0,0,0,0.04)' }
+                    },
+                    y: { grid: { display: false } }
+                }
+            }
         });
     </script>
 }
