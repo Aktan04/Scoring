@@ -178,26 +178,31 @@ public class LoanController : Controller
         return View();
     }
     
-    // ДЕТАЛИ ЗАЯВКИ: Мейкер и Чекер (Админ не имеет доступа к перс. данным клиентов)
     [Authorize(Roles = "maker, checker")]
     public async Task<IActionResult> Details(Guid id)
     {
-        var result = await _context.ScoringResults
-            .Include(r => r.Application)
-                .ThenInclude(a => a.LoanProduct)
+        var app = await _context.LoanApplications
+            .Include(a => a.LoanProduct)
+            .Include(a => a.Maker)
+            .Include(a => a.Checker)
+            .FirstOrDefaultAsync(a => a.Id == id);
+ 
+        if (app == null) return NotFound();
+ 
+        var scoring = await _context.ScoringResults
             .FirstOrDefaultAsync(r => r.ApplicationId == id);
-
-        if (result == null) 
-        {
-            var application = await _context.LoanApplications
-                .Include(a => a.LoanProduct)
-                .FirstOrDefaultAsync(a => a.Id == id);
-                
-            if (application == null) return NotFound();
-            return View("AppDetailsOnly", application);
-        }
-
-        return View(result);
+ 
+        var history = await _context.ApplicationHistories
+            .Include(h => h.ChangedBy)
+            .Where(h => h.ApplicationId == id)
+            .OrderByDescending(h => h.ChangedAt)
+            .ToListAsync();
+ 
+        ViewBag.Application   = app;
+        ViewBag.ScoringResult = scoring;   // null если ещё не посчитан
+        ViewBag.History       = history;
+ 
+        return View("UniversalDetails");
     }
     
     // ДОГОВОР: Мейкер распечатывает договор клиенту

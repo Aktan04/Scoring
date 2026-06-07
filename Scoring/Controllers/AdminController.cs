@@ -80,7 +80,7 @@ public class AdminController : Controller
         }
 
         await _context.SaveChangesAsync();
-        return RedirectToAction(nameof(VerificationQueue));
+        return RedirectToAction("Details", "Loan", new { id = app.Id });
     }
     
     // Просмотр истории и деталей конкретной заявки
