@@ -358,6 +358,63 @@
                 </div>
             </div>
 
+            @* ── Добавить в датасет (только для админа, только закрытые заявки) ── *@
+            @if (User.IsInRole("admin") &&
+                 (app?.Status == ApplicationStatus.Approved || app?.Status == ApplicationStatus.Rejected))
+            {
+                var alreadyInDataset = ViewBag.AlreadyInDataset as bool? ?? false;
+
+                <div class="card border-0 shadow-sm rounded-4 mb-4 border-top border-4 @(alreadyInDataset ? "border-secondary" : "border-info")">
+                    <div class="card-header bg-white border-bottom px-4 py-3 d-flex align-items-center justify-content-between">
+                        <h6 class="fw-bold mb-0 text-dark">
+                            <i class="bi bi-database-add text-info me-2"></i>Обучающий датасет
+                        </h6>
+                        @if (alreadyInDataset)
+                        {
+                            <span class="badge bg-success px-3 py-2">
+                                <i class="bi bi-check-circle me-1"></i>Уже добавлена
+                            </span>
+                        }
+                    </div>
+                    <div class="card-body p-4 @(alreadyInDataset ? "bg-light" : "bg-info bg-opacity-10")">
+                        @if (alreadyInDataset)
+                        {
+                            <p class="text-muted small mb-0">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Эта заявка уже добавлена в обучающую выборку модели.
+                            </p>
+                        }
+                        else
+                        {
+                            <p class="small text-muted mb-3">
+                                Укажите реальный исход по этому кредиту. Данные пополнят обучающую выборку
+                                и улучшат качество модели при следующем переобучении.
+                            </p>
+                            <div class="d-flex gap-2">
+                                <form asp-controller="Training" asp-action="AddToDataset" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="applicationId" value="@app.Id" />
+                                    <input type="hidden" name="isDefault" value="false" />
+                                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold"
+                                            onclick="return confirm('Добавить как выплаченный кредит (не дефолт)?')">
+                                        <i class="bi bi-check-circle me-1"></i>Кредит выплачен
+                                    </button>
+                                </form>
+                                <form asp-controller="Training" asp-action="AddToDataset" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="applicationId" value="@app.Id" />
+                                    <input type="hidden" name="isDefault" value="true" />
+                                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold"
+                                            onclick="return confirm('Добавить как дефолт? Клиент не выплатил кредит.')">
+                                        <i class="bi bi-x-circle me-1"></i>Дефолт
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
             @* ── Кнопки действий ── *@
             <div class="d-flex gap-3 flex-wrap">
                 <a asp-controller="Loan" asp-action="Index"

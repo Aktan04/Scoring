@@ -161,7 +161,10 @@ public class TrainingController : Controller
             SourceApplicationId = app.Id,
         });
         await _context.SaveChangesAsync();
-        TempData["Success"] = "Заявка добавлена в обучающий датасет.";
-        return RedirectToAction(nameof(Index));
+        TempData["Success"] = isDefault
+            ? "Добавлено как дефолт. Клиент не выплатил кредит."
+            : "Добавлено как выплаченный кредит.";
+ 
+        return RedirectToAction("Details", "Loan", new { id = applicationId });        
     }
 }

@@ -24,7 +24,7 @@ public class LoanController : Controller
     }
     
     // ПРОСМОТР ВСЕХ ЗАЯВОК: Доступно Мейкеру и Чекеру (Админ не видит)
-    [Authorize(Roles = "maker, checker")]
+    [Authorize(Roles = "maker, checker, admin")]
     public async Task<IActionResult> Index()
     {
         var applications = await _context.LoanApplications
@@ -178,7 +178,7 @@ public class LoanController : Controller
         return View();
     }
     
-    [Authorize(Roles = "maker, checker")]
+    [Authorize(Roles = "maker, checker, admin")]
     public async Task<IActionResult> Details(Guid id)
     {
         var app = await _context.LoanApplications
@@ -198,9 +198,13 @@ public class LoanController : Controller
             .OrderByDescending(h => h.ChangedAt)
             .ToListAsync();
  
-        ViewBag.Application   = app;
-        ViewBag.ScoringResult = scoring;   // null если ещё не посчитан
-        ViewBag.History       = history;
+        var alreadyInDataset = await _context.TrainingRecords
+            .AnyAsync(r => r.SourceApplicationId == id);
+ 
+        ViewBag.Application      = app;
+        ViewBag.ScoringResult    = scoring;
+        ViewBag.History          = history;
+        ViewBag.AlreadyInDataset = alreadyInDataset;
  
         return View("UniversalDetails");
     }

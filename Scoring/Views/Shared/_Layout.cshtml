@@ -37,12 +37,11 @@
                             <a class="nav-link" asp-controller="Loan" asp-action="Dashboard"><i class="bi bi-pie-chart me-1"></i> Аналитика</a>
                         </li>
 
-                        @if (User.IsInRole("maker") || User.IsInRole("checker"))
-                        {
+                        
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Loan" asp-action="Index"><i class="bi bi-card-list me-1"></i> База заявок</a>
                             </li>
-                        }
+                        
 
                         @if (User.IsInRole("maker"))
                         {
