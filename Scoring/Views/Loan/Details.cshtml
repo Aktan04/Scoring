@@ -39,7 +39,23 @@
                             Dictionary<string, string> logs = new();
                             if (!string.IsNullOrEmpty(Model.RawResponseJson))
                             {
-                                try { logs = JsonSerializer.Deserialize<Dictionary<string, string>>(Model.RawResponseJson); } catch { }
+                                try
+                                {
+                                    // Новый формат: вложенный объект с полем "bins"
+                                    var root = JsonSerializer.Deserialize<JsonElement>(Model.RawResponseJson);
+                                    if (root.TryGetProperty("bins", out var bins))
+                                    {
+                                        logs = JsonSerializer.Deserialize<Dictionary<string, string>>(bins.GetRawText())
+                                               ?? new();
+                                    }
+                                    else
+                                    {
+                                        // Старый формат: плоский словарь (seed-заявки)
+                                        logs = JsonSerializer.Deserialize<Dictionary<string, string>>(Model.RawResponseJson)
+                                               ?? new();
+                                    }
+                                }
+                                catch { }
                             }
                         }
 
