@@ -2,95 +2,378 @@
 @using Scoring.Models
 
 @{
-    ViewData["Title"] = "Управление заявками";
+    ViewData["Title"] = "База заявок";
+    var products = Model.Select(a => a.LoanProduct?.Name).Where(n => n != null).Distinct().OrderBy(n => n).ToList();
 }
 
-<div class="container-fluid mt-4 mb-5">
+<div class="container-fluid mt-4 mb-5 px-4">
+
+    @* ── Шапка ── *@
     <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-4 rounded-4 shadow-sm border">
         <div>
-            <h2 class="fw-bold text-dark mb-0"><i class="bi bi-inbox-fill text-primary me-2"></i>Все кредитные заявки</h2>
-            <p class="text-muted small mt-1 mb-0">Общий пул заявок банка</p>
+            <h2 class="fw-bold text-dark mb-0">
+                <i class="bi bi-inbox-fill text-primary me-2"></i>База заявок
+            </h2>
+            <p class="text-muted small mt-1 mb-0">Все кредитные заявки банка</p>
+        </div>
+        @if (User.IsInRole("maker"))
+        {
+            <a asp-action="Create" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                <i class="bi bi-plus-lg me-1"></i>Создать заявку
+            </a>
+        }
+    </div>
+
+    @* ── Счётчики ── *@
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card bg-primary text-white shadow-sm border-0 rounded-4 h-100">
+                <div class="card-body p-3 p-md-4">
+                    <div class="small text-uppercase fw-bold opacity-75">Всего</div>
+                    <div class="display-6 fw-bold mb-0" id="cnt-total">@ViewBag.TotalCount</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-success text-white shadow-sm border-0 rounded-4 h-100">
+                <div class="card-body p-3 p-md-4">
+                    <div class="small text-uppercase fw-bold opacity-75">Одобрено</div>
+                    <div class="display-6 fw-bold mb-0">@ViewBag.ApprovedCount</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-danger text-white shadow-sm border-0 rounded-4 h-100">
+                <div class="card-body p-3 p-md-4">
+                    <div class="small text-uppercase fw-bold opacity-75">Отказы</div>
+                    <div class="display-6 fw-bold mb-0">@ViewBag.RejectedCount</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-warning text-dark shadow-sm border-0 rounded-4 h-100">
+                <div class="card-body p-3 p-md-4">
+                    <div class="small text-uppercase fw-bold opacity-75">На проверке</div>
+                    <div class="display-6 fw-bold mb-0">@ViewBag.PendingCount</div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white shadow-sm border-0 rounded-4">
-                <div class="card-body p-4">
-                    <h6 class="text-uppercase small fw-bold opacity-75">Всего заявок</h6>
-                    <h2 class="display-5 fw-bold mb-0">@ViewBag.TotalCount</h2>
+    @* ── Фильтры ── *@
+    <div class="card shadow-sm border-0 rounded-4 mb-3">
+        <div class="card-body p-3">
+            <div class="row g-2 align-items-end">
+
+                @* Поиск *@
+                <div class="col-md-4">
+                    <label class="form-label small text-muted fw-bold mb-1">
+                        <i class="bi bi-search me-1"></i>Поиск (ФИО, ИНН, ID заявки)
+                    </label>
+                    <input type="text" id="f-search" class="form-control rounded-3"
+                           placeholder="Асанов, 12345678, или ID...">
                 </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white shadow-sm border-0 rounded-4">
-                <div class="card-body p-4">
-                    <h6 class="text-uppercase small fw-bold opacity-75">Одобрено (Авто)</h6>
-                    <h2 class="display-5 fw-bold mb-0">@ViewBag.ApprovedCount</h2>
+
+                @* Статус *@
+                <div class="col-md-2">
+                    <label class="form-label small text-muted fw-bold mb-1">Статус</label>
+                    <select id="f-status" class="form-select rounded-3">
+                        <option value="">Все статусы</option>
+                        <option value="Approved">Одобрено</option>
+                        <option value="Rejected">Отказ</option>
+                        <option value="ManualReview">На проверке</option>
+                    </select>
                 </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-danger text-white shadow-sm border-0 rounded-4">
-                <div class="card-body p-4">
-                    <h6 class="text-uppercase small fw-bold opacity-75">Отказы</h6>
-                    <h2 class="display-5 fw-bold mb-0">@ViewBag.RejectedCount</h2>
+
+                @* Продукт *@
+                <div class="col-md-3">
+                    <label class="form-label small text-muted fw-bold mb-1">Продукт</label>
+                    <select id="f-product" class="form-select rounded-3">
+                        <option value="">Все продукты</option>
+                        @foreach (var p in products)
+                        {
+                            <option value="@p">@p</option>
+                        }
+                    </select>
                 </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-dark shadow-sm border-0 rounded-4">
-                <div class="card-body p-4">
-                    <h6 class="text-uppercase small fw-bold opacity-75">На проверке</h6>
-                    <h2 class="display-5 fw-bold mb-0">@ViewBag.PendingCount</h2>
+
+                @* Сумма от/до *@
+                <div class="col-md-2">
+                    <label class="form-label small text-muted fw-bold mb-1">Сумма от</label>
+                    <input type="number" id="f-amount-min" class="form-control rounded-3" placeholder="0">
                 </div>
+                <div class="col-md-1">
+                    <label class="form-label small text-muted fw-bold mb-1">до</label>
+                    <input type="number" id="f-amount-max" class="form-control rounded-3" placeholder="∞">
+                </div>
+
+                @* Дата от/до *@
+                <div class="col-md-2">
+                    <label class="form-label small text-muted fw-bold mb-1">
+                        <i class="bi bi-calendar3 me-1"></i>Дата от
+                    </label>
+                    <input type="date" id="f-date-from" class="form-control rounded-3">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted fw-bold mb-1">до</label>
+                    <input type="date" id="f-date-to" class="form-control rounded-3">
+                </div>
+
+                @* Сброс *@
+                <div class="col-md-1">
+                    <button id="btn-reset" class="btn btn-outline-secondary rounded-3 w-100">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+
             </div>
         </div>
     </div>
 
+    @* ── Таблица ── *@
     <div class="card shadow-sm border-0 rounded-4">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover align-middle mb-0" id="main-table">
                     <thead class="table-light">
-                        <tr>
-                            <th class="ps-4 py-3 text-secondary text-uppercase small">Дата</th>
-                            <th class="py-3 text-secondary text-uppercase small">ФИО Клиента</th>
-                            <th class="py-3 text-secondary text-uppercase small">Сумма (сом)</th>
-                            <th class="py-3 text-secondary text-uppercase small">Продукт</th>
-                            <th class="py-3 text-secondary text-uppercase small">Статус</th>
-                            <th class="text-end pe-4 py-3 text-secondary text-uppercase small">Действия</th>
-                        </tr>
+                    <tr>
+                        <th class="ps-4 py-3 text-secondary text-uppercase small" style="min-width:100px">ID</th>
+                        <th class="py-3 text-secondary text-uppercase small">ФИО клиента</th>
+                        <th class="py-3 text-secondary text-uppercase small">ИНН</th>
+                        <th class="py-3 text-secondary text-uppercase small">Продукт</th>
+                        <th class="py-3 text-secondary text-uppercase small">Сумма</th>
+                        <th class="py-3 text-secondary text-uppercase small">Статус</th>
+                        <th class="py-3 text-secondary text-uppercase small">Создана</th>
+                        <th class="py-3 text-secondary text-uppercase small">Обновлена</th>
+                        <th class="text-end pe-4 py-3 text-secondary text-uppercase small"></th>
+                    </tr>
                     </thead>
-                    <tbody>
-                        @if (!Model.Any())
+                    <tbody id="table-body">
+                    @foreach (var item in Model)
+                    {
+                        string badgeClass = item.Status switch
                         {
-                            <tr><td colspan="6" class="text-center py-5 text-muted">Список заявок пуст</td></tr>
-                        }
-                        @foreach (var item in Model)
+                            ApplicationStatus.Approved     => "bg-success",
+                            ApplicationStatus.Rejected     => "bg-danger",
+                            ApplicationStatus.ManualReview => "bg-warning text-dark",
+                            _                              => "bg-info text-dark"
+                        };
+                        string statusText = item.Status switch
                         {
-                            <tr>
-                                <td class="ps-4 fw-bold text-muted small">@item.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
-                                <td class="fw-bold text-dark">@item.LastName @item.FirstName</td>
-                                <td class="fw-bold text-primary">@item.Amount.ToString("N0")</td>
-                                <td>@item.LoanProduct?.Name</td>
-                                <td>
-                                    <span class="badge px-3 py-2 rounded-pill @(item.Status == ApplicationStatus.Approved ? "bg-success" : 
-                                                                                (item.Status == ApplicationStatus.Rejected ? "bg-danger" : 
-                                                                                (item.Status == ApplicationStatus.ManualReview ? "bg-warning text-dark" : "bg-info")))">
-                                        @Html.DisplayFor(modelItem => item.Status)
+                            ApplicationStatus.Approved     => "Одобрено",
+                            ApplicationStatus.Rejected     => "Отказ",
+                            ApplicationStatus.ManualReview => "На проверке",
+                            ApplicationStatus.InScoring    => "На скоринге",
+                            _                              => item.Status.ToString()
+                        };
+                        <tr class="table-row"
+                            data-id="@item.Id.ToString().ToLower()"
+                            data-name="@((item.LastName + " " + item.FirstName).ToLower())"
+                            data-inn="@item.Inn"
+                            data-product="@item.LoanProduct?.Name"
+                            data-amount="@item.Amount"
+                            data-status="@item.Status.ToString()"
+                            data-createdat="@item.CreatedAt.ToString("yyyy-MM-dd")"
+                            data-updatedat="@item.UpdatedAt?.ToString("yyyy-MM-dd")">
+
+                            <td class="ps-4 text-muted small fw-bold font-monospace">
+                                @item.Id.ToString().Substring(0, 8).ToUpper()
+                            </td>
+                            <td class="fw-bold text-dark">@item.LastName @item.FirstName</td>
+                            <td class="text-muted small">@item.Inn</td>
+                            <td class="small">@item.LoanProduct?.Name</td>
+                            <td class="fw-bold text-primary">@item.Amount.ToString("N0") сом</td>
+                            <td>
+                                    <span class="badge px-3 py-2 rounded-pill @badgeClass">
+                                        @statusText
                                     </span>
-                                </td>
-                                <td class="text-end pe-4">
-                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-light border shadow-sm text-primary rounded-pill px-3 fw-bold">
-                                        Просмотр
-                                    </a>
-                                </td>
-                            </tr>
-                        }
+                            </td>
+                            <td class="text-muted small">@item.CreatedAt.ToLocalTime().ToString("dd.MM.yy HH:mm")</td>
+                            <td class="text-muted small">@item.UpdatedAt?.ToLocalTime().ToString("dd.MM.yy HH:mm")</td>
+                            <td class="text-end pe-4">
+                                <a asp-action="Details" asp-route-id="@item.Id"
+                                   class="btn btn-sm btn-light border shadow-sm text-primary rounded-pill px-3 fw-bold">
+                                    Открыть
+                                </a>
+                            </td>
+                        </tr>
+                    }
                     </tbody>
                 </table>
             </div>
         </div>
+
+        @* ── Пагинация и счётчик результатов ── *@
+        <div class="card-footer bg-white border-top rounded-bottom-4 px-4 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="text-muted small" id="results-info">Загрузка...</div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-muted small">Строк на странице:</span>
+                <select id="page-size" class="form-select form-select-sm rounded-3" style="width:70px">
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                </select>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+                </nav>
+            </div>
+        </div>
     </div>
 </div>
+
+<script>
+    (function () {
+        // ── Состояние ─────────────────────────────────────────────────────────────
+        let currentPage = 1;
+        let pageSize    = 10;
+        let filtered    = [];
+
+        const allRows = Array.from(document.querySelectorAll('.table-row'));
+
+        // ── Фильтрация ────────────────────────────────────────────────────────────
+        function applyFilters() {
+            const search    = document.getElementById('f-search').value.trim().toLowerCase();
+            const status    = document.getElementById('f-status').value;
+            const product   = document.getElementById('f-product').value;
+            const amountMin = parseFloat(document.getElementById('f-amount-min').value) || 0;
+            const amountMax = parseFloat(document.getElementById('f-amount-max').value) || Infinity;
+            const dateFrom  = document.getElementById('f-date-from').value;
+            const dateTo    = document.getElementById('f-date-to').value;
+
+            filtered = allRows.filter(row => {
+                const id        = row.dataset.id;
+                const name      = row.dataset.name;
+                const inn       = row.dataset.inn;
+                const rowStatus = row.dataset.status;
+                const rowProd   = row.dataset.product;
+                const amount    = parseFloat(row.dataset.amount);
+                const updated   = row.dataset.updatedat;
+
+                // InScoring не показываем в фильтрах статуса — но в "Все" показываем
+                if (status === 'InScoring') return false;
+
+                // Поиск по ФИО, ИНН, ID
+                if (search) {
+                    const match = name.includes(search)
+                        || inn.includes(search)
+                        || id.includes(search);
+                    if (!match) return false;
+                }
+
+                // Статус
+                if (status && rowStatus !== status) return false;
+
+                // Продукт
+                if (product && rowProd !== product) return false;
+
+                // Сумма
+                if (amount < amountMin || amount > amountMax) return false;
+
+                // Дата (по updatedAt)
+                if (dateFrom && updated < dateFrom) return false;
+                if (dateTo   && updated > dateTo)   return false;
+
+                return true;
+            });
+
+            currentPage = 1;
+            renderTable();
+        }
+
+        // ── Рендер страницы таблицы ───────────────────────────────────────────────
+        function renderTable() {
+            // Скрываем все строки
+            allRows.forEach(r => r.style.display = 'none');
+
+            const total = filtered.length;
+            const totalPages = Math.max(1, Math.ceil(total / pageSize));
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            const start = (currentPage - 1) * pageSize;
+            const end   = Math.min(start + pageSize, total);
+
+            filtered.slice(start, end).forEach(r => r.style.display = '');
+
+            // Счётчик
+            document.getElementById('results-info').textContent =
+                total === 0
+                    ? 'Ничего не найдено'
+                    : `Показано ${start + 1}–${end} из ${total} заявок`;
+
+            renderPagination(totalPages);
+        }
+
+        // ── Пагинация ─────────────────────────────────────────────────────────────
+        function renderPagination(totalPages) {
+            const ul = document.getElementById('pagination');
+            ul.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            function li(label, page, disabled, active) {
+                const item = document.createElement('li');
+                item.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+                const a = document.createElement('a');
+                a.className = 'page-link';
+                a.href = '#';
+                a.innerHTML = label;
+                if (!disabled && !active) {
+                    a.addEventListener('click', e => {
+                        e.preventDefault();
+                        currentPage = page;
+                        renderTable();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    });
+                }
+                item.appendChild(a);
+                ul.appendChild(item);
+            }
+
+            // Назад
+            li('&laquo;', currentPage - 1, currentPage === 1, false);
+
+            // Страницы с многоточием
+            const delta = 2;
+            const pages = new Set([1, totalPages]);
+            for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++)
+                pages.add(i);
+
+            let prev = 0;
+            Array.from(pages).sort((a, b) => a - b).forEach(p => {
+                if (prev && p - prev > 1) {
+                    const dot = document.createElement('li');
+                    dot.className = 'page-item disabled';
+                    dot.innerHTML = '<a class="page-link">…</a>';
+                    ul.appendChild(dot);
+                }
+                li(p, p, false, p === currentPage);
+                prev = p;
+            });
+
+            // Вперёд
+            li('&raquo;', currentPage + 1, currentPage === totalPages, false);
+        }
+
+        // ── Слушатели событий ─────────────────────────────────────────────────────
+        ['f-search','f-status','f-product','f-amount-min','f-amount-max','f-date-from','f-date-to']
+            .forEach(id => document.getElementById(id)
+                .addEventListener('input', applyFilters));
+
+        document.getElementById('page-size').addEventListener('change', function () {
+            pageSize    = parseInt(this.value);
+            currentPage = 1;
+            renderTable();
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            ['f-search','f-amount-min','f-amount-max','f-date-from','f-date-to']
+                .forEach(id => document.getElementById(id).value = '');
+            ['f-status','f-product']
+                .forEach(id => document.getElementById(id).selectedIndex = 0);
+            applyFilters();
+        });
+
+        // ── Инициализация ─────────────────────────────────────────────────────────
+        applyFilters();
+    })();
+</script>
